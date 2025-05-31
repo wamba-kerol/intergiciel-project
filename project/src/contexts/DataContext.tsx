@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Types
 interface Teacher {
@@ -10,6 +10,9 @@ interface Teacher {
 }
 
 interface Student {
+  sex: ReactNode;
+  age: ReactNode;
+  address: ReactNode;
   id: string;
   name: string;
   email: string;
@@ -35,7 +38,6 @@ interface Book {
   id: string;
   title: string;
   author: string;
-  coverUrl: string;
   description: string;
   available: boolean;
 }
@@ -132,7 +134,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           id: '1', 
           title: 'Les Misérables', 
           author: 'Victor Hugo', 
-          coverUrl: 'https://images.pexels.com/photos/4170629/pexels-photo-4170629.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 
           description: 'Un chef-d\'œuvre de la littérature française qui suit la vie et les luttes de Jean Valjean.', 
           available: true 
         },
@@ -140,7 +141,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           id: '2', 
           title: 'Le Petit Prince', 
           author: 'Antoine de Saint-Exupéry', 
-          coverUrl: 'https://images.pexels.com/photos/4170629/pexels-photo-4170629.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 
           description: 'Un conte poétique et philosophique sous l\'apparence d\'un conte pour enfants.', 
           available: true 
         },
@@ -148,7 +148,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           id: '3', 
           title: 'Candide', 
           author: 'Voltaire', 
-          coverUrl: 'https://images.pexels.com/photos/4170629/pexels-photo-4170629.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', 
           description: 'Un conte philosophique qui remet en question l\'optimisme leibnizien.', 
           available: true 
         }

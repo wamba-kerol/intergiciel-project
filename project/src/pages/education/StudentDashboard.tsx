@@ -74,6 +74,10 @@ const StudentDashboard: React.FC = () => {
                     <dt className="text-sm font-medium text-gray-500">Nom complet</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{studentData?.name || currentUser?.name}</dd>
                   </div>
+
+               
+
+
                   <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">Email</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{studentData?.email || currentUser?.email}</dd>
@@ -82,6 +86,7 @@ const StudentDashboard: React.FC = () => {
                     <dt className="text-sm font-medium text-gray-500">Niveau</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{studentData?.level || 'Non spécifié'}</dd>
                   </div>
+             
                   <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">Moyenne générale</dt>
                     <dd className={`mt-1 text-sm font-semibold ${getGradeColor(average)} sm:mt-0 sm:col-span-2`}>

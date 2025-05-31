@@ -71,7 +71,7 @@ const Hero: React.FC = () => {
       </div>
       
       {/* Indicateur de défilement */}
-      <motion.div 
+      {/* <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1, y: [0, 10, 0] }}
         transition={{ duration: 1.5, repeat: Infinity }}
@@ -80,7 +80,7 @@ const Hero: React.FC = () => {
         <div className="w-8 h-12 border-2 border-white rounded-full flex justify-center">
           <div className="w-2 h-2 bg-white rounded-full mt-2"></div>
         </div>
-      </motion.div>
+      </motion.div> */}
     </div>
   );
 };

@@ -76,7 +76,8 @@ const TeacherDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       <Navbar type="education" />
       
-      <div className="py-10">
+      {/* Ajout du padding-top ici */}
+      <div className="pt-[150px]">
         <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}

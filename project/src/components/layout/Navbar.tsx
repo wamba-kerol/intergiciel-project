@@ -50,8 +50,8 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
       className={`${
-        transparent ? 'bg-transparent absolute' : 'bg-white shadow-md'
-      } w-full z-10`}
+        transparent ? 'bg-white absolute' : 'bg-white shadow-md'
+      }w-full z-50 fixed top-0 left-0 right-0`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Bell, User, BookOpen, School, Home } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Search, User, BookOpen, School, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface NavbarProps {
@@ -11,33 +10,52 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false, type = 'main' }) => {
-  const { currentUser, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
+  const handleScrollTo = (hash: string) => {
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        scrollToHash(hash);
+      }, 100);
+    } else {
+      scrollToHash(hash);
+    }
+    setIsOpen(false);
+  };
+
+  const scrollToHash = (hash: string) => {
+    const element = document.getElementById(hash.replace('#', ''));
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const getNavLinks = () => {
     if (type === 'main') {
       return [
-        { name: 'Accueil', path: '/', icon: <Home className="h-5 w-5" /> },
-        { name: 'À propos', path: '#about', icon: <BookOpen className="h-5 w-5" /> },
-        { name: 'Contact', path: '#contact', icon: <User className="h-5 w-5" /> },
+        { name: 'Accueil', path: '/', icon: <Home className="h-5 w-5" />, isAnchor: false },
+        { name: 'À propos', path: '#about', icon: <BookOpen className="h-5 w-5" />, isAnchor: true },
+        { name: 'Contact', path: '#contact', icon: <User className="h-5 w-5" />, isAnchor: true },
       ];
     } else if (type === 'education') {
       return [
-        { name: 'Accueil', path: '/education/dashboard', icon: <Home className="h-5 w-5" /> },
-        { name: 'Cours', path: '/education/courses', icon: <School className="h-5 w-5" /> },
-        { name: 'Profil', path: '/education/profile', icon: <User className="h-5 w-5" /> },
+        { name: 'Accueil', path: '/education/dashboard', icon: <Home className="h-5 w-5" />, isAnchor: false },
+        { name: 'Cours', path: '/education/courses', icon: <School className="h-5 w-5" />, isAnchor: false },
+        { name: 'Profil', path: '/education/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
       ];
     } else {
       return [
-        { name: 'Accueil', path: '/library/home', icon: <Home className="h-5 w-5" /> },
-        { name: 'Livres', path: '/library/books', icon: <BookOpen className="h-5 w-5" /> },
-        { name: 'À propos', path: '/library/about', icon: <BookOpen className="h-5 w-5" /> },
-        { name: 'Profil', path: '/library/profile', icon: <User className="h-5 w-5" /> },
+        { name: 'Accueil', path: '/library/home', icon: <Home className="h-5 w-5" />, isAnchor: false },
+        { name: 'Livres', path: '/library/books', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
+        { name: 'À propos', path: '/library/about', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
+        { name: 'Profil', path: '/library/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
       ];
     }
   };
@@ -49,9 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`${
-        transparent ? 'bg-white absolute' : 'bg-white shadow-md'
-      }w-full z-50 fixed top-0 left-0 right-0`}
+      className={`${transparent ? 'bg-slate-200' : 'bg-white shadow-md'} w-full z-50 fixed top-0 left-0 right-0`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
@@ -77,44 +93,34 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
 
           <div className="hidden md:flex items-center space-x-4">
             {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  location.pathname === link.path
-                    ? 'text-blue-800 bg-blue-50'
-                    : 'text-gray-700 hover:text-blue-800 hover:bg-blue-50'
-                }`}
-              >
-                {link.icon}
-                <span className="ml-1">{link.name}</span>
-              </Link>
-            ))}
-
-            {currentUser ? (
-              <div className="relative ml-3 flex items-center space-x-3">
-                {type !== 'main' && (
-                  <button className="p-1 rounded-full text-gray-600 hover:text-blue-800 focus:outline-none">
-                    <Bell className="h-6 w-6" />
-                  </button>
-                )}
-                <button 
-                  onClick={logout}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700"
+              link.isAnchor ? (
+                <button
+                  key={link.name}
+                  onClick={() => handleScrollTo(link.path)}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                    window.location.hash === link.path
+                      ? 'text-blue-800 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-800 hover:bg-blue-50'
+                  }`}
                 >
-                  Déconnexion
+                  {link.icon}
+                  <span className="ml-1">{link.name}</span>
                 </button>
-              </div>
-            ) : (
-              type === 'main' && (
+              ) : (
                 <Link
-                  to="/login/education"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700"
+                  key={link.name}
+                  to={link.path}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                    location.pathname === link.path
+                      ? 'text-blue-800 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-800 hover:bg-blue-50'
+                  }`}
                 >
-                  Connexion
+                  {link.icon}
+                  <span className="ml-1">{link.name}</span>
                 </Link>
               )
-            )}
+            ))}
           </div>
 
           <div className="md:hidden flex items-center">
@@ -128,7 +134,6 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isOpen && (
         <motion.div 
           initial={{ opacity: 0, height: 0 }}
@@ -152,39 +157,35 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
             )}
 
             {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
-                  location.pathname === link.path
-                    ? 'text-blue-800 bg-blue-50'
-                    : 'text-gray-700 hover:text-blue-800 hover:bg-blue-50'
-                }`}
-                onClick={() => setIsOpen(false)}
-              >
-                {link.icon}
-                <span className="ml-2">{link.name}</span>
-              </Link>
-            ))}
-
-            {currentUser ? (
-              <button
-                onClick={logout}
-                className="w-full flex items-center px-3 py-2 text-base font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700"
-              >
-                Déconnexion
-              </button>
-            ) : (
-              type === 'main' && (
+              link.isAnchor ? (
+                <button
+                  key={link.name}
+                  onClick={() => handleScrollTo(link.path)}
+                  className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
+                    window.location.hash === link.path
+                      ? 'text-blue-800 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-800 hover:bg-blue-50'
+                  }`}
+                >
+                  {link.icon}
+                  <span className="ml-2">{link.name}</span>
+                </button>
+              ) : (
                 <Link
-                  to="/login/education"
-                  className="flex items-center px-3 py-2 text-base font-medium text-white bg-blue-800 rounded-md hover:bg-blue-700"
+                  key={link.name}
+                  to={link.path}
+                  className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
+                    location.pathname === link.path
+                      ? 'text-blue-800 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-800 hover:bg-blue-50'
+                  }`}
                   onClick={() => setIsOpen(false)}
                 >
-                  Connexion
+                  {link.icon}
+                  <span className="ml-2">{link.name}</span>
                 </Link>
               )
-            )}
+            ))}
           </div>
         </motion.div>
       )}

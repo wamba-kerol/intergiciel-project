@@ -22,7 +22,6 @@ const LoginPage: React.FC = () => {
     
     try {
       await login(email, password, type as 'education' | 'library');
-      // La redirection est gérée dans la fonction login
     } catch (error) {
       setError('Identifiants incorrects. Veuillez réessayer.');
     } finally {
@@ -55,7 +54,7 @@ const LoginPage: React.FC = () => {
             <span className="sr-only">Institut EDUSYS</span>
             <div className="h-16 w-16 mx-auto bg-blue-800 text-white flex items-center justify-center rounded-full">
               {type === 'education' ? (
-                <svg xmlns="http://www.w3.org/2000/svg\" className="h-8 w-8\" fill="none\" viewBox="0 0 24 24\" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M12 14l9-5-9-5-9 5 9 5z" />
                   <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
@@ -99,8 +98,8 @@ const LoginPage: React.FC = () => {
               <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-500\" xmlns="http://www.w3.org/2000/svg\" viewBox="0 0 20 20\" fill="currentColor\" aria-hidden="true">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z\" clipRule="evenodd" />
+                    <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="ml-3">
@@ -188,8 +187,8 @@ const LoginPage: React.FC = () => {
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-white\" xmlns="http://www.w3.org/2000/svg\" fill="none\" viewBox="0 0 24 24">
-                    <circle className="opacity-25\" cx="12\" cy="12\" r="10\" stroke="currentColor\" strokeWidth="4"></circle>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
@@ -202,29 +201,30 @@ const LoginPage: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+          {/* S'inscrire uniquement pour bibliothèque */}
+          {type === 'library' && (
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Ou</span>
+                </div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Ou
-                </span>
-              </div>
-            </div>
 
-            <div className="mt-6 text-center">
-              <Link 
-                to={`/register/${type}`} 
-                className="font-medium text-blue-800 hover:text-blue-900"
-              >
-                S'inscrire avec une nouvelle adresse e-mail
-              </Link>
+              <div className="mt-6 text-center">
+                <Link 
+                  to={`/register/${type}`} 
+                  className="font-medium text-blue-800 hover:text-blue-900"
+                >
+                  S'inscrire avec une nouvelle adresse e-mail
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
-        
+
         <div className="mt-6 text-center">
           <Link to="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
             ← Retour à l'accueil

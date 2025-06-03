@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Pages principales
 import HomePage from './pages/HomePage';
@@ -40,6 +41,7 @@ function App() {
             {/* Pages bibliothèque */}
             <Route path="/library/admin" element={<LibraryDashboard />} />
             <Route path="/library/home" element={<LibraryHomePage />} />
+          <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </DataProvider>
       </AuthProvider>

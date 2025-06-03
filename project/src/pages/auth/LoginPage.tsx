@@ -21,9 +21,13 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     
     try {
+      if (!email || !password) {
+        throw new Error('Veuillez remplir tous les champs');
+      }
+
       await login(email, password, type as 'education' | 'library');
-    } catch (error) {
-      setError('Identifiants incorrects. Veuillez réessayer.');
+    } catch (error: any) {
+      setError(error.message || 'Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
@@ -50,6 +54,46 @@ const LoginPage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">{getTitle()}</h2>
+          <p className="mt-2 text-sm text-gray-600">{getDescription()}</p>
+          
+          {/* Exemples d'utilisateurs pour les tests */}
+          <div className="mt-4 mb-8 text-sm text-gray-600">
+            <p>Exemples d'utilisateurs pour les tests:</p>
+            {type === 'education' ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span>Admin:</span>
+                  <span className="text-blue-600">admin.edu@uds.cm</span>
+                  <span>/ admin123</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Professeur:</span>
+                  <span className="text-blue-600">prof.martin@uds.cm</span>
+                  <span>/ prof123</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Étudiant:</span>
+                  <span className="text-blue-600">jean.student@uds.cm</span>
+                  <span>/ student123</span>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span>Admin:</span>
+                  <span className="text-blue-600">admin.lib@uds.cm</span>
+                  <span>/ admin123</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Bibliothécaire:</span>
+                  <span className="text-blue-600">sophie.lib@uds.cm</span>
+                  <span>/ lib123</span>
+                </div>
+              </div>
+            )}
+          </div>
+        
           <Link to="/" className="inline-block">
             <span className="sr-only">Institut EDUSYS</span>
             <div className="h-16 w-16 mx-auto bg-blue-800 text-white flex items-center justify-center rounded-full">

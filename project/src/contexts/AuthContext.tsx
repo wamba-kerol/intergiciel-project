@@ -7,6 +7,7 @@ interface User {
   email: string;
   role: 'admin' | 'teacher' | 'student';
   type: 'education' | 'library';
+  password: string;
 }
 
 interface AuthContextType {
@@ -27,43 +28,65 @@ export function useAuth() {
   return context;
 }
 
-// Utilisateurs par défaut
+// Exemples d'utilisateurs pour la connexion
 const defaultUsers: User[] = [
+  // Utilisateurs éducation
   {
     id: '1',
     name: 'Admin Education',
-    email: 'admin.edu@example.com',
+    email: 'admin.edu@uds.cm',
     role: 'admin',
-    type: 'education'
+    type: 'education',
+    password: 'admin123'
   },
   {
     id: '2',
-    name: 'Admin Bibliothèque',
-    email: 'admin.lib@example.com',
-    role: 'admin',
-    type: 'library'
+    name: 'Professeur Martin',
+    email: 'prof.martin@uds.cm',
+    role: 'teacher',
+    type: 'education',
+    password: 'prof123'
   },
   {
     id: '3',
-    name: 'Professeur Martin',
-    email: 'prof@example.com',
-    role: 'teacher',
-    type: 'education'
+    name: 'Etudiant Jean',
+    email: 'jean.student@uds.cm',
+    role: 'student',
+    type: 'education',
+    password: 'student123'
   },
+  
+  // Utilisateurs bibliothèque
   {
     id: '4',
+    name: 'Admin Bibliothèque',
+    email: 'admin.lib@uds.cm',
+    role: 'admin',
+    type: 'library',
+    password: 'admin123'
+  },
+  {
+    id: '5',
+    name: 'Bibliothécaire Sophie',
+    email: 'sophie.lib@uds.cm',
+    role: 'teacher',
+    type: 'library',
+    password: 'lib123'
+  },
+  {
+    id: '6',
     name: 'Étudiant Dupont',
     email: 'etudiant@example.com',
     role: 'student',
-    type: 'education'
+    type: 'education',
+    password: 'student123'
   }
-];
+]
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
-  // Initialiser les utilisateurs par défaut au démarrage
   useEffect(() => {
     const savedUsers = localStorage.getItem('users');
     if (!savedUsers) {
@@ -80,28 +103,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, type: 'education' | 'library') => {
-    // Simuler une connexion
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const user = users.find(u => u.email === email && u.type === type);
-    
-    if (!user) {
-      throw new Error('Utilisateur non trouvé');
-    }
-    
-    // Dans un vrai système, vous vérifieriez le mot de passe ici
-    // Pour la démo, on accepte n'importe quel mot de passe
-    
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    
-    // Rediriger en fonction du rôle
-    if (type === 'education') {
-      if (user.role === 'admin') navigate('/education/admin');
-      else if (user.role === 'teacher') navigate('/education/teacher');
-      else navigate('/education/student');
-    } else {
-      if (user.role === 'admin') navigate('/library/admin');
-      else navigate('/library/home');
+    try {
+      const user = defaultUsers.find(u => u.email === email && u.password === password && u.type === type);
+      
+      if (!user) {
+        throw new Error('Email ou mot de passe incorrect');
+      }
+
+      setCurrentUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Redirection selon le rôle et le type
+      if (type === 'education') {
+        switch (user.role) {
+          case 'admin':
+            navigate('/education/admin');
+            break;
+          case 'teacher':
+            navigate('/education/teacher');
+            break;
+          case 'student':
+            navigate('/education/student');
+            break;
+        }
+      } else {
+        navigate('/library/admin');
+      }
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -119,7 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name,
       email,
       role,
-      type
+      type,
+      password
     };
     
     users.push(newUser);

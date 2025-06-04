@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom'; // Removed useNavigate
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-
+import { isValidEmail } from '../../utils/validation';
 const LoginPage: React.FC = () => {
   const { type } = useParams<{ type: 'education' | 'library' }>();
   const { login } = useAuth();
-  const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,12 +18,21 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+
+    // Client-side validation
+    if (!email || !password) {
+      setError('Veuillez remplir tous les champs.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Format d\'email invalide.');
+      setIsLoading(false);
+      return;
+    }
     
     try {
-      if (!email || !password) {
-        throw new Error('Veuillez remplir tous les champs');
-      }
-
       await login(email, password, type as 'education' | 'library');
     } catch (error: any) {
       setError(error.message || 'Une erreur est survenue. Veuillez réessayer.');
@@ -216,7 +224,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <Link to="/reset-password" className="font-medium text-blue-800 hover:text-blue-900">
+                <Link to="/email-reset" className="font-medium text-blue-800 hover:text-blue-900">
                   Mot de passe oublié ?
                 </Link>
               </div>

@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { isValidEmail, isValidPassword } from '../../utils/validation'; // Added
 
 const RegisterPage: React.FC = () => {
   const { type } = useParams<{ type: 'education' | 'library' }>();
@@ -20,8 +21,29 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Client-side validation
+    if (!name || !email || !password || !confirmPassword) {
+      setError('Veuillez remplir tous les champs.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Format d\'email invalide.');
+      setIsLoading(false);
+      return;
+    }
+
+    const passwordValidation = isValidPassword(password);
+    if (!passwordValidation.valid) {
+      setError(passwordValidation.message || 'Mot de passe invalide.');
+      setIsLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Les mots de passe ne correspondent pas.');
+      setIsLoading(false); // Also set isLoading to false here
       return;
     }
     

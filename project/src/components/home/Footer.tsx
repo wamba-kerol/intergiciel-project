@@ -4,10 +4,10 @@ import { School, Facebook, Twitter, Instagram, Linkedin as LinkedIn, Mail } from
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-blue-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="bg-blue-900  text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" id='about'>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-1">
+          <div className="col-span-1  md:col-span-1">
             <Link to="/" className="flex items-center mb-5">
               <School className="h-8 w-8 text-white" />
               <span className="ml-2 text-xl font-bold">Université de Dschang</span>

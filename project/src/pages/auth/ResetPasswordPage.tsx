@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Added useLocation
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
 
 const ResetPasswordPage: React.FC = () => {
   const { resetPassword } = useAuth();
+  const location = useLocation();
+  // Retrieve the token and email passed from OtpVerifyPage
+  // Ensure your OtpVerifyPage passes these in navigate state
+  const otpToken = location.state?.otpToken as string | undefined;
+  const email = location.state?.email as string | undefined; // Optional: for display or if needed by API
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,7 +31,12 @@ const ResetPasswordPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await resetPassword(password);
+      if (!otpToken) {
+        setError('Jeton de vérification manquant. Veuillez recommencer le processus.');
+        setIsLoading(false);
+        return;
+      }
+      await resetPassword(otpToken, password);
       setSuccess(true);
     } catch (error) {
       setError('Une erreur est survenue. Veuillez réessayer.');
@@ -63,7 +73,7 @@ const ResetPasswordPage: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-2 text-center text-sm text-gray-600 max-w"
         >
-          Veuillez saisir votre nouveau mot de passe.
+          Veuillez saisir votre nouveau mot de passe. {email && `(pour ${email})`}
         </motion.p>
       </div>
 

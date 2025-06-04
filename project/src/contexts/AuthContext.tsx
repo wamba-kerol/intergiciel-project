@@ -15,7 +15,9 @@ interface AuthContextType {
   login: (email: string, password: string, type: 'education' | 'library') => Promise<void>;
   register: (name: string, email: string, password: string, type: 'education' | 'library') => Promise<void>;
   logout: () => void;
-  resetPassword: (password: string) => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>; // Added
+  verifyOtp: (email: string, otp: string) => Promise<string>; // Added - returns a token
+  resetPassword: (token: string, newPassword: string) => Promise<void>; // Updated signature
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             break;
         }
       } else {
-        navigate('/library/admin');
+        navigate('/library/home');
       }
     } catch (error) {
       throw error;
@@ -171,8 +173,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/');
   };
 
-  const resetPassword = async (password: string) => {
-    // Simuler la réinitialisation du mot de passe
+  const sendPasswordResetEmail = async (email: string) => {
+    // Simulate sending a password reset email
+    console.log(`Password reset email requested for: ${email}`);
+    // In a real app, you would call your backend API here
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    // You might want to store a temporary token or flag that an email has been sent
+  };
+
+  const verifyOtp = async (email: string, otp: string) => {
+    // Simulate OTP verification
+    console.log(`OTP verification for email: ${email} with OTP: ${otp}`);
+    // In a real app, call your backend API to verify the OTP
+    // If successful, the backend should return a secure, short-lived token
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    if (otp === "123456") { // Dummy OTP for simulation
+      return "simulated-secure-token-from-backend";
+    }
+    throw new Error("Invalid OTP");
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    // Simulate resetting the password using the token
+    console.log(`Resetting password with token: ${token} and new password: ${newPassword}`);
+    // In a real app, call your backend API to reset the password
+    // The backend should validate the token before changing the password
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    // For now, just navigate to login
+    // You might want to clear the current user or token from state/localStorage
     navigate('/login/education');
   };
 
@@ -181,7 +209,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
-    resetPassword
+    sendPasswordResetEmail, // Added
+    verifyOtp, // Added
+    resetPassword // Updated
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

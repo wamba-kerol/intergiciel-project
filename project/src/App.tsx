@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
@@ -9,6 +8,8 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import EmailResetPage from './pages/auth/EmailResetPage'; // Added
+import OtpVerifyPage from './pages/auth/OtpVerifyPage'; // Added
 
 // Pages éducation
 import EducationDashboard from './pages/education/EducationDashboard';
@@ -31,6 +32,8 @@ function App() {
             {/* Pages d'authentification */}
             <Route path="/login/:type" element={<LoginPage />} />
             <Route path="/register/:type" element={<RegisterPage />} />
+            <Route path="/email-reset" element={<EmailResetPage />} /> {/* Added */}
+            <Route path="/otp-verify" element={<OtpVerifyPage />} /> {/* Added */}
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             
             {/* Pages éducation */}

@@ -53,8 +53,8 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
     } else {
       return [
         { name: 'Accueil', path: '/library/home', icon: <Home className="h-5 w-5" />, isAnchor: false },
-        { name: 'Livres', path: '/library/books', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
-        { name: 'À propos', path: '/library/about', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
+        { name: 'Livres', path: '/library/admin', icon: <BookOpen className="h-5 w-5" />, isAnchor: true },
+        { name: 'À propos', path: '#about', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
         { name: 'Profil', path: '/library/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
       ];
     }

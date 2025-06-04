@@ -52,7 +52,7 @@ const LibraryHomePage: React.FC = () => {
       <Navbar type="library" withSearch={true} />
       
       {/* Hero section */}
-      <div className="relative bg-blue-800 text-white">
+      <div className="relative py bg-blue-800 text-white">
         <div className="absolute inset-0">
           <img 
             className="w-full h-full object-cover opacity-20"
@@ -120,11 +120,7 @@ const LibraryHomePage: React.FC = () => {
               className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col"
             >
               <div className="h-48 w-full relative">
-                <img 
-                  src={book.coverUrl}
-                  alt={book.title}
-                  className="w-full h-full object-cover"
-                />
+               
                 <div className="absolute top-2 right-2">
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${book.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {book.available ? 'Disponible' : 'Emprunté'}

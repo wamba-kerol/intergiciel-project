@@ -160,7 +160,7 @@ const LibraryDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Navbar type="library" withSearch={false} />
       
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pt-16">
         <Sidebar activeView={activeView} onViewChange={setActiveView} />
         
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">

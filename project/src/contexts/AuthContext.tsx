@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setCurrentUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('currentUser', JSON.stringify(user)); // Corrected localStorage key
       
       // Redirection selon le rôle et le type
       if (type === 'education') {
@@ -128,8 +128,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             navigate('/education/student');
             break;
         }
-      } else {
-        navigate('/library/home');
+      } else { // type === 'library'
+        switch (user.role) {
+          case 'admin':
+            navigate('/library/admin');
+            break;
+          // Add cases for other library roles if needed, e.g., 'teacher', 'student'
+          // case 'teacher':
+          //   navigate('/library/teacher-dashboard'); // Example
+          //   break;
+          default:
+            navigate('/library/home'); // Default for other library users
+            break;
+        }
       }
     } catch (error) {
       throw error;

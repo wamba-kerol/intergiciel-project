@@ -5,7 +5,8 @@ interface BookFormData {
   id?: string;
   title: string;
   author: string;
-  description: string;
+  publication_date?: string;
+  genre?: string;
   available: boolean;
 }
 
@@ -14,7 +15,7 @@ interface BookModalProps {
   isEditing: boolean;
   initialData: BookFormData;
   onClose: () => void;
-  onSubmit: (formData: BookFormData) => void;
+  onSubmit: (formData: BookFormData) => Promise<void>;
 }
 
 const BookModal: React.FC<BookModalProps> = ({
@@ -25,10 +26,12 @@ const BookModal: React.FC<BookModalProps> = ({
   onSubmit
 }) => {
   const [formData, setFormData] = useState<BookFormData>(initialData);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setFormData(initialData);
+      setError(null);
     }
   }, [isOpen, initialData]);
 
@@ -41,16 +44,21 @@ const BookModal: React.FC<BookModalProps> = ({
     setFormData(prev => ({ ...prev, available: e.target.checked }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    try {
+      setError(null);
+      await onSubmit(formData);
+      onClose();
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Erreur lors de la sauvegarde du livre.');
+    }
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -58,8 +66,6 @@ const BookModal: React.FC<BookModalProps> = ({
             className="fixed inset-0 z-40 bg-black bg-opacity-50"
             onClick={onClose}
           />
-
-          {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
@@ -72,8 +78,13 @@ const BookModal: React.FC<BookModalProps> = ({
                   {isEditing ? 'Modifier le livre' : 'Ajouter un livre'}
                 </h2>
 
+                {error && (
+                  <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+                    {error}
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Champ Titre */}
                   <div>
                     <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                       Titre *
@@ -88,8 +99,6 @@ const BookModal: React.FC<BookModalProps> = ({
                       required
                     />
                   </div>
-
-                  {/* Champ Auteur */}
                   <div>
                     <label htmlFor="author" className="block text-sm font-medium text-gray-700">
                       Auteur *
@@ -104,25 +113,33 @@ const BookModal: React.FC<BookModalProps> = ({
                       required
                     />
                   </div>
-
-                
-                  {/* Champ Description */}
                   <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      Description *
+                    <label htmlFor="publication_date" className="block text-sm font-medium text-gray-700">
+                      Date de publication
                     </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
+                    <input
+                      type="text"
+                      id="publication_date"
+                      name="publication_date"
+                      value={formData.publication_date || ''}
                       onChange={handleChange}
-                      rows={4}
+                      placeholder="JJ/MM/AAAA"
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
                     />
                   </div>
-
-                  {/* Champ Disponibilité */}
+                  <div>
+                    <label htmlFor="genre" className="block text-sm font-medium text-gray-700">
+                      Genre
+                    </label>
+                    <input
+                      type="text"
+                      id="genre"
+                      name="genre"
+                      value={formData.genre || ''}
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                   <div className="flex items-center">
                     <input
                       id="available"
@@ -136,8 +153,6 @@ const BookModal: React.FC<BookModalProps> = ({
                       Disponible à l'emprunt
                     </label>
                   </div>
-
-                  {/* Boutons d'action */}
                   <div className="flex justify-end space-x-3 pt-4">
                     <button
                       type="button"

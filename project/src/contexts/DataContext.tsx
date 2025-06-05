@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import axios from 'axios';
 
 // Types
 interface Teacher {
@@ -10,15 +11,15 @@ interface Teacher {
 }
 
 interface Student {
-  sex: ReactNode;
-  age: ReactNode;
-  address: ReactNode;
   id: string;
   name: string;
   email: string;
   level: string;
   subjects: string[];
   grades: Record<string, number>;
+  sex?: ReactNode;
+  age?: ReactNode;
+  address?: ReactNode;
 }
 
 interface Classroom {
@@ -38,8 +39,10 @@ interface Book {
   id: string;
   title: string;
   author: string;
-  description: string;
+  publication_date?: string;
+  genre?: string;
   available: boolean;
+  owner_id?: string;
 }
 
 interface Loan {
@@ -52,29 +55,24 @@ interface Loan {
 }
 
 interface DataContextType {
-  // Education data
   teachers: Teacher[];
   students: Student[];
   classrooms: Classroom[];
   courses: Course[];
-  
-  // Library data
   books: Book[];
   loans: Loan[];
-  
-  // Education methods
   addTeacher: (teacher: Omit<Teacher, 'id'>) => void;
   addStudent: (student: Omit<Student, 'id' | 'grades'>) => void;
   addClassroom: (classroom: Omit<Classroom, 'id'>) => void;
   addCourse: (course: Omit<Course, 'id'>) => void;
   updateGrade: (studentId: string, subject: string, grade: number) => void;
-  
-  // Library methods
-  addBook: (book: Omit<Book, 'id'>) => void;
-  updateBook: (id: string, book: Partial<Book>) => void;
-  deleteBook: (id: string) => void;
-  borrowBook: (bookId: string, userId: string, returnDate: string) => void;
-  returnBook: (loanId: string) => void;
+  fetchBooks: () => Promise<void>;
+  fetchUserBooks: (userId: string) => Promise<Book[]>;
+  addBook: (book: Omit<Book, 'id'>, userId: string) => Promise<void>;
+  updateBook: (id: string, book: Partial<Book>) => Promise<void>;
+  deleteBook: (id: string) => Promise<void>;
+  borrowBook: (bookId: string, userId: string, returnDate: string) => Promise<void>;
+  returnBook: (loanId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -88,17 +86,13 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  // États pour le système d'éducation
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  
-  // États pour le système de bibliothèque
   const [books, setBooks] = useState<Book[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   
-  // Charger les données depuis localStorage au démarrage
   useEffect(() => {
     const savedTeachers = localStorage.getItem('teachers');
     if (savedTeachers) setTeachers(JSON.parse(savedTeachers));
@@ -112,13 +106,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const savedCourses = localStorage.getItem('courses');
     if (savedCourses) setCourses(JSON.parse(savedCourses));
     
-    const savedBooks = localStorage.getItem('books');
-    if (savedBooks) setBooks(JSON.parse(savedBooks));
-    
-    const savedLoans = localStorage.getItem('loans');
-    if (savedLoans) setLoans(JSON.parse(savedLoans));
-    
-    // Initialiser avec des données de démonstration si vide
     if (!savedTeachers) {
       const initialTeachers = [
         { id: '1', name: 'Marie Dupont', email: 'marie@example.com', subject: 'Mathématiques', classroom: 'Salle 101' },
@@ -127,37 +114,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setTeachers(initialTeachers);
       localStorage.setItem('teachers', JSON.stringify(initialTeachers));
     }
-    
-    if (!savedBooks) {
-      const initialBooks = [
-        { 
-          id: '1', 
-          title: 'Les Misérables', 
-          author: 'Victor Hugo', 
-          description: 'Un chef-d\'œuvre de la littérature française qui suit la vie et les luttes de Jean Valjean.', 
-          available: true 
-        },
-        { 
-          id: '2', 
-          title: 'Le Petit Prince', 
-          author: 'Antoine de Saint-Exupéry', 
-          description: 'Un conte poétique et philosophique sous l\'apparence d\'un conte pour enfants.', 
-          available: true 
-        },
-        { 
-          id: '3', 
-          title: 'Candide', 
-          author: 'Voltaire', 
-          description: 'Un conte philosophique qui remet en question l\'optimisme leibnizien.', 
-          available: true 
-        }
-      ];
-      setBooks(initialBooks);
-      localStorage.setItem('books', JSON.stringify(initialBooks));
-    }
   }, []);
   
-  // Sauvegarder les données dans localStorage à chaque changement
   useEffect(() => {
     localStorage.setItem('teachers', JSON.stringify(teachers));
   }, [teachers]);
@@ -174,15 +132,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('courses', JSON.stringify(courses));
   }, [courses]);
   
-  useEffect(() => {
-    localStorage.setItem('books', JSON.stringify(books));
-  }, [books]);
-  
-  useEffect(() => {
-    localStorage.setItem('loans', JSON.stringify(loans));
-  }, [loans]);
-  
-  // Méthodes pour le système d'éducation
   const addTeacher = (teacher: Omit<Teacher, 'id'>) => {
     const newTeacher = { ...teacher, id: Date.now().toString() };
     setTeachers([...teachers, newTeacher]);
@@ -222,49 +171,192 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }));
   };
   
-  // Méthodes pour le système de bibliothèque
-  const addBook = (book: Omit<Book, 'id'>) => {
-    const newBook = { ...book, id: Date.now().toString() };
-    setBooks([...books, newBook]);
-  };
-  
-  const updateBook = (id: string, book: Partial<Book>) => {
-    setBooks(books.map(b => {
-      if (b.id === id) {
-        return { ...b, ...book };
+  const fetchBooks = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
-      return b;
-    }));
-  };
-  
-  const deleteBook = (id: string) => {
-    setBooks(books.filter(book => book.id !== id));
-  };
-  
-  const borrowBook = (bookId: string, userId: string, returnDate: string) => {
-    // Marquer le livre comme non disponible
-    setBooks(books.map(book => {
-      if (book.id === bookId) {
-        return { ...book, available: false };
+
+      const response = await axios.get('http://localhost:8006/api/ressources/book/index', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const bookData = Array.isArray(response.data) ? response.data : response.data.data || [];
+
+      const mappedBooks: Book[] = bookData.map((book: any) => ({
+        id: book.id.toString(),
+        title: book.title,
+        author: book.author,
+        publication_date: book.publication_date,
+        genre: book.genre,
+        available: book.status === 'available',
+        owner_id: book.owner_id?.toString(),
+      }));
+
+      setBooks(mappedBooks);
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    }
+  }, []);
+
+  const fetchUserBooks = useCallback(async (userId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
-      return book;
-    }));
-    
-    // Créer un nouvel emprunt
-    const newLoan = {
-      id: Date.now().toString(),
-      bookId,
-      userId,
-      loanDate: new Date().toISOString(),
-      returnDate,
-      returned: false
-    };
-    
-    setLoans([...loans, newLoan]);
+
+      const response = await axios.get(`http://localhost:8006/api/usecases/user/getbooks/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('API response for user books:', response.data);
+
+      const bookData = Array.isArray(response.data) ? response.data : response.data.data || [];
+
+      const mappedBooks: Book[] = bookData.map((book: any) => ({
+        id: book.id.toString(),
+        title: book.title,
+        author: book.author,
+        publication_date: book.publication_date,
+        genre: book.genre,
+        available: book.status === 'available',
+        owner_id: book.owner_id?.toString(),
+      }));
+
+      return mappedBooks;
+    } catch (error) {
+      console.error('Error fetching user books:', error);
+      return [];
+    }
+  }, []);
+
+  const addBook = async (book: Omit<Book, 'id'>, userId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const bookData = {
+        title: book.title,
+        author: book.author,
+        publication_date: book.publication_date || null,
+        genre: book.genre || null,
+        status: book.available ? 'available' : 'borrowed',
+        owner_id: userId,
+      };
+
+      const response = await axios.post('http://localhost:8006/api/ressources/book/store', bookData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const newBook: Book = {
+        id: response.data.id.toString(),
+        title: response.data.title,
+        author: response.data.author,
+        publication_date: response.data.publication_date,
+        genre: response.data.genre,
+        available: response.data.status === 'available',
+        owner_id: response.data.owner_id?.toString(),
+      };
+
+      setBooks([...books, newBook]);
+    } catch (error) {
+      console.error('Error adding book:', error);
+      throw error;
+    }
   };
-  
-  const returnBook = (loanId: string) => {
-    // Trouver l'emprunt et marquer comme retourné
+
+  const updateBook = async (id: string, book: Partial<Book>) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const bookData = {
+        title: book.title,
+        author: book.author,
+        publication_date: book.publication_date || null,
+        genre: book.genre || null,
+        status: book.available ? 'available' : 'borrowed',
+      };
+
+      const response = await axios.put(`http://localhost:8006/api/ressources/book/update/${id}`, bookData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const updatedBook: Book = {
+        id: response.data.id.toString(),
+        title: response.data.title,
+        author: response.data.author,
+        publication_date: response.data.publication_date,
+        genre: response.data.genre,
+        available: response.data.status === 'available',
+        owner_id: response.data.owner_id?.toString(),
+      };
+
+      setBooks(books.map(b => (b.id === id ? updatedBook : b)));
+    } catch (error) {
+      console.error('Error updating book:', error);
+      throw error;
+    }
+  };
+
+  const deleteBook = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      await axios.delete(`http://localhost:8006/api/ressources/book/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setBooks(books.filter(book => book.id !== id));
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      throw error;
+    }
+  };
+
+  const borrowBook = async (bookId: string, userId: string, returnDate: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Envoyer la demande d'emprunt
+      await axios.post(`http://localhost:8006/api/usecases/notification/loanrequest/${bookId}/${userId}`, {
+        return_date: returnDate
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Ne pas modifier l'état local, attendre que le backend mette à jour la disponibilité
+    } catch (error) {
+      console.error('Error requesting loan:', error);
+      throw error;
+    }
+  };
+
+  const returnBook = async (loanId: string) => {
     const loan = loans.find(l => l.id === loanId);
     if (!loan) return;
     
@@ -275,7 +367,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return l;
     }));
     
-    // Marquer le livre comme disponible
     setBooks(books.map(book => {
       if (book.id === loan.bookId) {
         return { ...book, available: true };
@@ -283,7 +374,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return book;
     }));
   };
-  
+
   const value = {
     teachers,
     students,
@@ -296,6 +387,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addClassroom,
     addCourse,
     updateGrade,
+    fetchBooks,
+    fetchUserBooks,
     addBook,
     updateBook,
     deleteBook,

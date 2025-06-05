@@ -5,63 +5,68 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import Navbar from '../../components/layout/Navbar';
 import Sidebar from '../../components/layout/Sidebar';
-import BookTable from '../../components/books/bookTable';
+import BookTable from '../../components/books/BookTable';
 import BookModal from '../../components/books/BookModal';
 
 interface BookFormData {
   id?: string;
   title: string;
   author: string;
-  description: string;
+  publication_date?: string;
+  genre?: string;
   available: boolean;
 }
 
 const LibraryDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const { books, loans, addBook, updateBook, deleteBook, borrowBook } = useData();
+  const { books, fetchBooks, fetchUserBooks, addBook, updateBook, deleteBook, borrowBook } = useData();
   
   const [activeView, setActiveView] = useState<'all' | 'my-books'>('all');
   const [showModal, setShowModal] = useState(false);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [initialized, setInitialized] = useState(false);
+  const [userBooks, setUserBooks] = useState<BookFormData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<string[]>([]);
   
   const [bookForm, setBookForm] = useState<BookFormData>({
     title: '',
     author: '',
-    description: '',
-    available: true
+    publication_date: '',
+    genre: '',
+    available: true,
   });
 
-  const getUserBooks = useCallback((userId: string) => {
-    return books.filter(book => {
-      const bookLoans = loans.filter(loan => loan.bookId === book.id && !loan.returned);
-      return bookLoans.some(loan => loan.userId === userId);
-    });
-  }, [books, loans]);
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
 
-  const getAvailableBooks = useCallback(() => {
-    return books.filter(book => book.available);
-  }, [books]);
+  useEffect(() => {
+    if (activeView === 'my-books' && currentUser) {
+      console.log('Current user ID:', currentUser.id);
+      fetchUserBooks(currentUser.id).then(books => {
+        setUserBooks(books);
+        console.log('User books:', books);
+      });
+    }
+  }, [activeView, currentUser, fetchUserBooks]);
 
   const getDisplayedBooks = useCallback(() => {
     if (!currentUser) return [];
     
-    let booksToDisplay = activeView === 'my-books' 
-      ? getUserBooks(currentUser.id)
-      : getAvailableBooks();
+    let booksToDisplay = activeView === 'my-books' ? userBooks : books;
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       booksToDisplay = booksToDisplay.filter(book => 
         book.title.toLowerCase().includes(term) ||
         book.author.toLowerCase().includes(term) ||
-        (book.description && book.description.toLowerCase().includes(term))
+        (book.genre && book.genre.toLowerCase().includes(term))
       );
     }
     
     return booksToDisplay;
-  }, [activeView, currentUser, getAvailableBooks, getUserBooks, searchTerm]);
+  }, [activeView, currentUser, searchTerm, books, userBooks]);
 
   const displayedBooks = useMemo(() => getDisplayedBooks(), [getDisplayedBooks]);
 
@@ -69,10 +74,12 @@ const LibraryDashboard: React.FC = () => {
     setBookForm({
       title: '',
       author: '',
-      description: '',
-      available: true
+      publication_date: '',
+      genre: '',
+      available: true,
     });
     setEditingBookId(null);
+    setError(null);
   }, []);
 
   const handleEditBook = useCallback((book: BookFormData) => {
@@ -81,8 +88,9 @@ const LibraryDashboard: React.FC = () => {
     setBookForm({
       title: book.title,
       author: book.author,
-      description: book.description,
-      available: book.available
+      publication_date: book.publication_date || '',
+      genre: book.genre || '',
+      available: book.available,
     });
     setEditingBookId(book.id);
     setShowModal(true);
@@ -90,67 +98,59 @@ const LibraryDashboard: React.FC = () => {
 
   const handleBookSubmit = useCallback(async (formData: BookFormData) => {
     try {
+      setError(null);
+      if (!currentUser) {
+        throw new Error('Utilisateur non connecté');
+      }
+
       if (editingBookId) {
         await updateBook(editingBookId, formData);
       } else {
-        await addBook(formData);
+        await addBook(formData, currentUser.id);
       }
       resetForm();
       setShowModal(false);
-    } catch (error) {
+      fetchBooks();
+      if (activeView === 'my-books') {
+        fetchUserBooks(currentUser.id).then(setUserBooks);
+      }
+    } catch (error: any) {
       console.error('Error submitting book:', error);
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la sauvegarde du livre.');
     }
-  }, [addBook, editingBookId, resetForm, updateBook]);
+  }, [addBook, editingBookId, fetchBooks, fetchUserBooks, resetForm, updateBook, activeView, currentUser]);
+
+  const handleDeleteBook = useCallback(async (id: string) => {
+    try {
+      setError(null);
+      if (window.confirm('Voulez-vous vraiment supprimer ce livre ?')) {
+        await deleteBook(id);
+        fetchBooks();
+        if (activeView === 'my-books' && currentUser) {
+          fetchUserBooks(currentUser.id).then(setUserBooks);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deleting book:', error);
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la suppression du livre.');
+    }
+  }, [deleteBook, fetchBooks, fetchUserBooks, activeView, currentUser]);
 
   const handleBorrowBook = useCallback(async (bookId: string) => {
-    if (currentUser) {
-      try {
-        const returnDate = new Date();
-        returnDate.setDate(returnDate.getDate() + 14);
-        await borrowBook(bookId, currentUser.id, returnDate.toISOString());
-      } catch (error) {
-        console.error('Error borrowing book:', error);
+    try {
+      setError(null);
+      if (!currentUser) {
+        throw new Error('Utilisateur non connecté');
       }
+      await borrowBook(bookId, currentUser.id);
+      setPendingRequests(prev => [...prev, bookId]);
+      fetchBooks();
+    } catch (error: any) {
+      console.error('Error borrowing book:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la demande d\'emprunt. Veuillez réessayer.';
+      setError(errorMessage);
     }
-  }, [borrowBook, currentUser]);
-
-  useEffect(() => {
-    const initializeExampleBooks = async () => {
-      if (books.length > 0 || initialized) return;
-
-      const exampleBooks: BookFormData[] = [
-        {
-          title: 'Le Petit Prince',
-          author: 'Antoine de Saint-Exupéry',
-          description: 'Un conte poétique et philosophique sous l\'apparence d\'un conte pour enfants.',
-          available: true
-        },
-        {
-          title: '1984',
-          author: 'George Orwell',
-          description: 'Une dystopie classique sur une société totalitaire et la surveillance de masse.',
-          available: true
-        },
-        {
-          title: 'Harry Potter à l\'école des sorciers',
-          author: 'J.K. Rowling',
-          description: 'Le premier tome de la saga fantastique sur le jeune sorcier Harry Potter.',
-          available: false
-        }
-      ];
-
-      try {
-        for (const book of exampleBooks) {
-          await addBook(book);
-        }
-        setInitialized(true);
-      } catch (err) {
-        console.error('Error initializing example books:', err);
-      }
-    };
-
-    initializeExampleBooks();
-  }, [addBook, books.length, initialized]);
+  }, [borrowBook, currentUser, fetchBooks]);
 
   useEffect(() => {
     setSearchTerm('');
@@ -178,7 +178,7 @@ const LibraryDashboard: React.FC = () => {
                 <p className="mt-1 text-sm text-gray-500">
                   {activeView === 'my-books' 
                     ? 'Gérez votre collection personnelle de livres' 
-                    : 'Parcourez les livres disponibles à l\'emprunt'}
+                    : 'Parcourez tous les livres de la bibliothèque'}
                 </p>
               </div>
               
@@ -199,6 +199,16 @@ const LibraryDashboard: React.FC = () => {
             </div>
           </motion.div>
           
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+            >
+              {error}
+            </motion.div>
+          )}
+          
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -215,7 +225,7 @@ const LibraryDashboard: React.FC = () => {
                   <input
                     id="search"
                     name="search"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-800 focus:border-blue-800 sm:text-sm"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-800 focus:border-blue-800"
                     placeholder="Rechercher un livre..."
                     type="search"
                     value={searchTerm}
@@ -224,14 +234,21 @@ const LibraryDashboard: React.FC = () => {
                 </div>
               </div>
               
-              <BookTable 
-                books={displayedBooks}
-                currentUserId={currentUser?.id || ''}
-                currentView={activeView}
-                onEdit={handleEditBook}
-                onDelete={deleteBook}
-                onBorrow={handleBorrowBook}
-              />
+              {displayedBooks.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500">Aucun livre trouvé. Essayez d'ajouter un livre.</p>
+                </div>
+              ) : (
+                <BookTable 
+                  books={displayedBooks}
+                  currentUserId={currentUser?.id || ''}
+                  currentView={activeView}
+                  onEdit={handleEditBook}
+                  onDelete={handleDeleteBook}
+                  onBorrow={handleBorrowBook}
+                  pendingRequests={pendingRequests}
+                />
+              )}
             </div>
           </motion.div>
         </main>

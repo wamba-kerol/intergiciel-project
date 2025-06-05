@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, BookOpen, Clock, X } from 'lucide-react';
+import { Search, BookOpen, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import Navbar from '../../components/layout/Navbar';
@@ -8,13 +8,18 @@ import Footer from '../../components/home/Footer';
 
 const LibraryHomePage: React.FC = () => {
   const { currentUser } = useAuth();
-  const { books, loans, borrowBook } = useData();
+  const { books, loans, fetchBooks, borrowBook } = useData();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<typeof books[0] | null>(null);
   const [returnDate, setReturnDate] = useState('');
   
+  // Charger les livres au montage
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
+
   // Filtrer les livres en fonction de la recherche
   const filteredBooks = books.filter(book => {
     if (!searchTerm) return true;
@@ -23,19 +28,24 @@ const LibraryHomePage: React.FC = () => {
     return (
       book.title.toLowerCase().includes(term) ||
       book.author.toLowerCase().includes(term) ||
-      book.description.toLowerCase().includes(term)
+      (book.genre && book.genre.toLowerCase().includes(term))
     );
   });
   
   // Fonction pour emprunter un livre
-  const handleBorrow = (e: React.FormEvent) => {
+  const handleBorrow = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedBook && currentUser) {
-      borrowBook(selectedBook.id, currentUser.id, returnDate);
-      setShowBorrowModal(false);
-      setSelectedBook(null);
-      setReturnDate('');
+      try {
+        await borrowBook(selectedBook.id, currentUser.id, returnDate);
+        setShowBorrowModal(false);
+        setSelectedBook(null);
+        setReturnDate('');
+        fetchBooks(); // Rafraîchir les livres après emprunt
+      } catch (error) {
+        console.error('Error borrowing book:', error);
+      }
     }
   };
   
@@ -52,7 +62,7 @@ const LibraryHomePage: React.FC = () => {
       <Navbar type="library" withSearch={true} />
       
       {/* Hero section */}
-      <div className="relative py bg-blue-800 text-white">
+      <div className="relative bg-blue-800 text-white">
         <div className="absolute inset-0">
           <img 
             className="w-full h-full object-cover opacity-20"
@@ -94,7 +104,7 @@ const LibraryHomePage: React.FC = () => {
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-3 border border-transparent rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white focus:border-white sm:text-md"
-                placeholder="Rechercher par titre, auteur ou description..."
+                placeholder="Rechercher par titre, auteur ou genre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -120,7 +130,6 @@ const LibraryHomePage: React.FC = () => {
               className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col"
             >
               <div className="h-48 w-full relative">
-               
                 <div className="absolute top-2 right-2">
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${book.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {book.available ? 'Disponible' : 'Emprunté'}
@@ -131,7 +140,7 @@ const LibraryHomePage: React.FC = () => {
               <div className="p-6 flex-1 flex flex-col">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{book.title}</h3>
                 <p className="text-sm text-gray-600 mb-4">par {book.author}</p>
-                <p className="text-gray-600 mb-6 flex-1 line-clamp-3">{book.description}</p>
+                <p className="text-gray-600 mb-6 flex-1 line-clamp-3">{book.genre || 'Genre non spécifié'}</p>
                 <button
                   onClick={() => {
                     if (book.available) {
@@ -170,10 +179,8 @@ const LibraryHomePage: React.FC = () => {
       {showBorrowModal && selectedBook && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity\" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="fixed inset-0 bg-gray-500 opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true"></span>
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}

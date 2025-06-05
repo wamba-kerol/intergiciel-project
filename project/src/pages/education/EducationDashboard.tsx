@@ -46,13 +46,34 @@ interface CourseFormData {
 }
 
 const EducationDashboard: React.FC = () => {
-  const { currentUser } = useAuth();
-  const { teachers, students, classrooms, courses, subjects, addTeacher, addStudent, addClassroom, addCourse, addSubject } = useData();
+  const { 
+    teachers, 
+    students, 
+    classrooms, 
+    courses, 
+    subjects, 
+    addTeacher, 
+    addStudent, 
+    addClassroom, 
+    addCourse, 
+    addSubject,
+    updateTeacher,
+    deleteTeacher,
+    updateStudent,
+    deleteStudent,
+    updateClassroom,
+    deleteClassroom,
+    updateCourse,
+    deleteCourse,
+    updateSubject,
+    deleteSubject
+  } = useData();
 
   const [activeTab, setActiveTab] = useState('teachers');
   const [showModal, setShowModal] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  // États typés pour les formulaires
   const [teacherForm, setTeacherForm] = useState<TeacherFormData>({
     name: '',
     email: '',
@@ -90,6 +111,100 @@ const EducationDashboard: React.FC = () => {
     coef: 1
   });
 
+  const handleEdit = (entity: any) => {
+    setEditingEntity(entity);
+    setIsEditMode(true);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    switch (activeTab) {
+      case 'teachers':
+        deleteTeacher(id);
+        break;
+      case 'students':
+        deleteStudent(id);
+        break;
+      case 'classrooms':
+        deleteClassroom(id);
+        break;
+      case 'courses':
+        deleteCourse(id);
+        break;
+      case 'matiere':
+        deleteSubject(id);
+        break;
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isEditMode) {
+      switch (activeTab) {
+        case 'teachers':
+          updateTeacher(editingEntity.id, teacherForm);
+          break;
+        case 'students':
+          updateStudent(editingEntity.id, studentForm);
+          break;
+        case 'classrooms':
+          updateClassroom(editingEntity.id, classroomForm);
+          break;
+        case 'courses':
+          updateCourse(editingEntity.id, courseForm);
+          break;
+        case 'matiere':
+          updateSubject(editingEntity.id, matiereForm);
+          break;
+      }
+      setIsEditMode(false);
+      setEditingEntity(null);
+    } else {
+      switch (activeTab) {
+        case 'teachers':
+          addTeacher(teacherForm);
+          break;
+        case 'students':
+          addStudent({
+            ...studentForm,
+            level: '',
+            subjects: []
+          });
+          break;
+        case 'classrooms':
+          addClassroom(classroomForm);
+          break;
+        case 'courses':
+          addCourse(courseForm);
+          break;
+        case 'matiere':
+          addSubject(matiereForm);
+          break;
+      }
+    }
+
+    setShowModal(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setTeacherForm({ name: '', email: '', sex: '', age: 18, address: '' });
+    setStudentForm({ name: '', email: '', sex: '', age: 18, address: '' });
+    setClassroomForm({ name: '', capacity: 30 });
+    setCourseForm({
+      name: '',
+      coef: 1,
+      teacherId: '',
+      classroomId: '',
+      subject: '',
+      day: '',
+      startTime: '',
+      endTime: ''
+    });
+    setMatiereForm({ name: '', coef: 1 });
+  };
+
   // Fonction pour gérer les changements dans le formulaire de cours
   const handleCourseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -124,61 +239,12 @@ const EducationDashboard: React.FC = () => {
     });
   };
 
-  // Fonctions pour gérer les soumissions
-  const handleTeacherSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addTeacher(teacherForm);
-    setTeacherForm({ name: '', email: '', sex: '', age: 18, address: '' });
-    setShowModal(false);
-  };
-
-  const handleStudentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addStudent({
-      ...studentForm,
-      level: '',
-      subjects: []
-    });
-    setStudentForm({ name: '', email: '', sex: '', age: 18, address: '' });
-    setShowModal(false);
-  };
-
-  const handleClassroomSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addClassroom(classroomForm);
-    setClassroomForm({ name: '', capacity: 30 });
-    setShowModal(false);
-  };
-
-  const handleCourseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addCourse(courseForm);
-    setCourseForm({
-      name: '',
-      coef: 1,
-      teacherId: '',
-      classroomId: '',
-      subject: '',
-      day: '',
-      startTime: '',
-      endTime: ''
-    });
-    setShowModal(false);
-  };
-
-  const handleMatiereSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addSubject(matiereForm);
-    setMatiereForm({ name: '', coef: 1 });
-    setShowModal(false);
-  };
-
   // Render le formulaire approprié en fonction de l'onglet actif
   const renderForm = () => {
     switch (activeTab) {
       case 'teachers':
         return (
-          <form onSubmit={handleTeacherSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nom</label>
               <input
@@ -256,7 +322,7 @@ const EducationDashboard: React.FC = () => {
                 type="submit"
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
               >
-                Ajouter
+                {isEditMode ? 'Modifier' : 'Ajouter'}
               </button>
             </div>
           </form>
@@ -267,14 +333,15 @@ const EducationDashboard: React.FC = () => {
           <StudentForm
             studentForm={studentForm}
             handleStudentChange={handleStudentChange}
-            handleStudentSubmit={handleStudentSubmit}
+            handleSubmit={handleSubmit}
             onCancel={() => setShowModal(false)}
+            isEditMode={isEditMode}
           />
         );
 
       case 'classrooms':
         return (
-          <form onSubmit={handleClassroomSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nom de la salle</label>
               <input
@@ -312,7 +379,7 @@ const EducationDashboard: React.FC = () => {
                 type="submit"
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
               >
-                Ajouter
+                {isEditMode ? 'Modifier' : 'Ajouter'}
               </button>
             </div>
           </form>
@@ -320,7 +387,7 @@ const EducationDashboard: React.FC = () => {
 
       case 'courses':
         return (
-          <form onSubmit={handleCourseSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="teacherId" className="block text-sm font-medium text-gray-700">Enseignant</label>
               <select
@@ -431,7 +498,7 @@ const EducationDashboard: React.FC = () => {
                 type="submit"
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
               >
-                Ajouter
+                {isEditMode ? 'Modifier' : 'Ajouter'}
               </button>
             </div>
           </form>
@@ -439,7 +506,7 @@ const EducationDashboard: React.FC = () => {
 
       case 'matiere':
         return (
-          <form onSubmit={handleMatiereSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nom de la matière</label>
               <input
@@ -477,7 +544,7 @@ const EducationDashboard: React.FC = () => {
                 type="submit"
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
               >
-                Ajouter
+                {isEditMode ? 'Modifier' : 'Ajouter'}
               </button>
             </div>
           </form>
@@ -502,6 +569,7 @@ const EducationDashboard: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexe</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adresse</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -512,11 +580,25 @@ const EducationDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.age}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.sex}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.address}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => handleEdit(teacher)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(teacher.id)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-600 hover:text-red-800 bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {teachers.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun enseignant trouvé</td>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">Aucun enseignant trouvé</td>
                   </tr>
                 )}
               </tbody>
@@ -535,6 +617,7 @@ const EducationDashboard: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexe</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adresse</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -545,11 +628,25 @@ const EducationDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.sex}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.age}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.address}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => handleEdit(student)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium  text-blue-800 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-med text-red-800 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-800"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {students.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun étudiant trouvé</td>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">Aucun étudiant trouvé</td>
                   </tr>
                 )}
               </tbody>
@@ -565,6 +662,7 @@ const EducationDashboard: React.FC = () => {
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacité</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -572,11 +670,25 @@ const EducationDashboard: React.FC = () => {
                   <tr key={classroom.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{classroom.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{classroom.capacity}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => handleEdit(classroom)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium  text-blue-800 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(classroom.id)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium  text-red-800 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-800"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {classrooms.length === 0 && (
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">Aucune salle trouvée</td>
+                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">Aucune salle trouvée</td>
                   </tr>
                 )}
               </tbody>
@@ -595,6 +707,7 @@ const EducationDashboard: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matière</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jour</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horaires</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -616,11 +729,25 @@ const EducationDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {course.startTime} - {course.endTime}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => handleEdit(course)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium  text-blue-800 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(course.id)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium  text-red-800 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-800"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {courses.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun cours trouvé</td>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">Aucun cours trouvé</td>
                   </tr>
                 )}
               </tbody>
@@ -636,6 +763,7 @@ const EducationDashboard: React.FC = () => {
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom de la matière</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coefficient</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -643,11 +771,25 @@ const EducationDashboard: React.FC = () => {
                   <tr key={subject.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{subject.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{subject.coef}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => handleEdit(subject.id)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue text-blue-800 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(subject.id)}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium  text-red-800 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-800"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {subjects.length === 0 && (
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">Aucune matière trouvée</td>
+                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">Aucune matière trouvée</td>
                   </tr>
                 )}
               </tbody>

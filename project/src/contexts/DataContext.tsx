@@ -82,6 +82,16 @@ interface DataContextType {
   addCourse: (course: Omit<Course, 'id'>) => void;
   addSubject: (subject: Omit<Subject, 'id'>) => void;
   updateGrade: (studentId: string, subject: string, grade: number) => void;
+  updateTeacher: (id: string, updatedTeacher: Partial<Teacher>) => void;
+  deleteTeacher: (id: string) => void;
+  updateStudent: (id: string, updatedStudent: Partial<Student>) => void;
+  deleteStudent: (id: string) => void;
+  updateClassroom: (id: string, updatedClassroom: Partial<Classroom>) => void;
+  deleteClassroom: (id: string) => void;
+  updateCourse: (id: string, updatedCourse: Partial<Course>) => void;
+  deleteCourse: (id: string) => void;
+  updateSubject: (id: string, updatedSubject: Partial<Subject>) => void;
+  deleteSubject: (id: string) => void;
   
   // Library methods
   addBook: (book: Omit<Book, 'id'>) => void;
@@ -275,7 +285,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
     setSubjects([...subjects, newSubject]);
   };
-  
+
   const updateGrade = (studentId: string, subject: string, grade: number) => {
     setStudents(students.map(student => {
       if (student.id === studentId) {
@@ -289,6 +299,56 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
       return student;
     }));
+  };
+
+  const updateTeacher = (id: string, updatedTeacher: Partial<Teacher>) => {
+    setTeachers(teachers.map(teacher => 
+      teacher.id === id ? { ...teacher, ...updatedTeacher } : teacher
+    ));
+  };
+
+  const deleteTeacher = (id: string) => {
+    setTeachers(teachers.filter(teacher => teacher.id !== id));
+  };
+
+  const updateStudent = (id: string, updatedStudent: Partial<Student>) => {
+    setStudents(students.map(student => 
+      student.id === id ? { ...student, ...updatedStudent } : student
+    ));
+  };
+
+  const deleteStudent = (id: string) => {
+    setStudents(students.filter(student => student.id !== id));
+  };
+
+  const updateClassroom = (id: string, updatedClassroom: Partial<Classroom>) => {
+    setClassrooms(classrooms.map(classroom => 
+      classroom.id === id ? { ...classroom, ...updatedClassroom } : classroom
+    ));
+  };
+
+  const deleteClassroom = (id: string) => {
+    setClassrooms(classrooms.filter(classroom => classroom.id !== id));
+  };
+
+  const updateCourse = (id: string, updatedCourse: Partial<Course>) => {
+    setCourses(courses.map(course => 
+      course.id === id ? { ...course, ...updatedCourse } : course
+    ));
+  };
+
+  const deleteCourse = (id: string) => {
+    setCourses(courses.filter(course => course.id !== id));
+  };
+
+  const updateSubject = (id: string, updatedSubject: Partial<Subject>) => {
+    setSubjects(subjects.map(subject => 
+      subject.id === id ? { ...subject, ...updatedSubject } : subject
+    ));
+  };
+
+  const deleteSubject = (id: string) => {
+    setSubjects(subjects.filter(subject => subject.id !== id));
   };
   
   // Méthodes pour le système de bibliothèque
@@ -366,6 +426,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addCourse,
     addSubject,
     updateGrade,
+    updateTeacher,
+    deleteTeacher,
+    updateStudent,
+    deleteStudent,
+    updateClassroom,
+    deleteClassroom,
+    updateCourse,
+    deleteCourse,
+    updateSubject,
+    deleteSubject,
     addBook,
     updateBook,
     deleteBook,
@@ -393,6 +463,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       addCourse,
       addSubject,
       updateGrade,
+      updateTeacher,
+      deleteTeacher,
+      updateStudent,
+      deleteStudent,
+      updateClassroom,
+      deleteClassroom,
+      updateCourse,
+      deleteCourse,
+      updateSubject,
+      deleteSubject,
       
       // Library methods
       addBook,

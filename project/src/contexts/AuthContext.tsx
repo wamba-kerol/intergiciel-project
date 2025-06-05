@@ -159,16 +159,19 @@ resetPassword: (email: string, token: string, newPassword: string, type: 'educat
             throw new Error(error.response?.data?.message || 'Code OTP invalide.');
         }
     };
-     const resetPassword = async (email: string, token: string, new_password: string, type: 'education' | 'library') => {
-        try {
-          console.log(email, token, new_password);
-            const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
-            await axios.post(`${apiUrl}/password/reset`, { email, token, new_password });
-            navigate('/login/education');
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Erreur lors de la réinitialisation du mot de passe.');
-        }
-    };
+    const resetPassword = async (email: string, token: string, new_password: string, type: 'education' | 'library') => {
+       try {
+           console.log(email, token, new_password);
+           const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+           await axios.post(`${apiUrl}/password/reset`, { email, token, new_password });
+           
+           // Redirection dynamique en fonction du type
+           const redirectPath = type === 'education' ? '/login/education' : '/login/library';
+           navigate(redirectPath);
+       } catch (error: any) {
+           throw new Error(error.response?.data?.message || 'Erreur lors de la réinitialisation du mot de passe.');
+       }
+   };
 
      const value = {
        currentUser,

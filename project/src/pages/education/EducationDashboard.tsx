@@ -11,8 +11,9 @@ import StudentForm from '../../components/education/StudentForm';
 interface TeacherFormData {
   name: string;
   email: string;
-  subject: string;
-  classroom: string;
+  sex: string;
+  age: number;
+  address: string;
 }
 
 interface StudentFormData {
@@ -47,8 +48,9 @@ const EducationDashboard: React.FC = () => {
   const [teacherForm, setTeacherForm] = useState<TeacherFormData>({
     name: '',
     email: '',
-    subject: '',
-    classroom: ''
+    sex: '',
+    age: 18,
+    address: ''
   });
 
   const [studentForm, setStudentForm] = useState<StudentFormData>({
@@ -102,7 +104,7 @@ const EducationDashboard: React.FC = () => {
   const handleTeacherSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addTeacher(teacherForm);
-    setTeacherForm({ name: '', email: '', subject: '', classroom: '' });
+    setTeacherForm({ name: '', email: '', sex: '', age: 18, address: '' });
     setShowModal(false);
   };
 
@@ -147,23 +149,6 @@ const EducationDashboard: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="sex" className="block text-sm font-medium text-gray-700">Sexe</label>
-              <select
-                id="sex"
-                name="sex"
-                value={studentForm.sex}
-                onChange={handleStudentChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800"
-                required
-              >
-                <option value="">Sélectionnez</option>
-                <option value="Masculin">Masculin</option>
-                <option value="Féminin">Féminin</option>
-                <option value="Autre">Autre</option>
-              </select>
-            </div>
-
-            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
@@ -175,36 +160,54 @@ const EducationDashboard: React.FC = () => {
                 required
               />
             </div>
+            <div>
+              <label htmlFor="sex" className="block text-sm font-medium text-gray-700">Sexe</label>
+              <select
+                id="sex"
+                name="sex"
+                value={teacherForm.sex}
+                onChange={handleTeacherChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800"
+                required
+              >
+                <option value="">Sélectionnez</option>
+                <option value="Masculin">Masculin</option>
+                <option value="Féminin">Féminin</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
 
             <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Matière</label>
+              <label htmlFor="age" className="block text-sm font-medium text-gray-700">Âge</label>
+              <input
+                type="number"
+                id="age"
+                name="age"
+                value={teacherForm.age}
+                onChange={handleTeacherChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800"
+                required
+                min="18"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700">Adresse</label>
               <input
                 type="text"
-                id="subject"
-                name="subject"
-                value={teacherForm.subject}
+                id="address"
+                name="address"
+                value={teacherForm.address}
                 onChange={handleTeacherChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800"
                 required
               />
             </div>
 
-            <div>
-              <label htmlFor="classroom" className="block text-sm font-medium text-gray-700">Salle</label>
-              <select
-                id="classroom"
-                name="classroom"
-                value={teacherForm.classroom}
-                onChange={handleTeacherChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800"
-                required
-              >
-                <option value="">Sélectionnez une salle</option>
-                {classrooms.map(classroom => (
-                  <option key={classroom.id} value={classroom.name}>{classroom.name}</option>
-                ))}
-              </select>
-            </div>
+
+
+
+
 
             <div className="flex justify-end">
               <button
@@ -325,7 +328,7 @@ const EducationDashboard: React.FC = () => {
               >
                 <option value="">Sélectionnez un enseignant</option>
                 {teachers.map(teacher => (
-                  <option key={teacher.id} value={teacher.name}>{teacher.name} - {teacher.subject}</option>
+                  <option key={teacher.id} value={teacher.name}>{teacher.name}</option>
                 ))}
               </select>
             </div>
@@ -364,8 +367,11 @@ const EducationDashboard: React.FC = () => {
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matière</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salle</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</th>
+
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexe</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">adress</th>
+
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -373,8 +379,10 @@ const EducationDashboard: React.FC = () => {
                   <tr key={teacher.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{teacher.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.subject}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.classroom}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.sex}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.age}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.address}</td>
+
                   </tr>
                 ))}
                 {teachers.length === 0 && (

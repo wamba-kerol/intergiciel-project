@@ -5,8 +5,9 @@ interface Teacher {
   id: string;
   name: string;
   email: string;
-  subject: string;
-  classroom: string;
+  sex: string;
+  age: number;
+  address: string;
 }
 
 interface Student {
@@ -121,8 +122,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // Initialiser avec des données de démonstration si vide
     if (!savedTeachers) {
       const initialTeachers = [
-        { id: '1', name: 'Marie Dupont', email: 'marie@example.com', subject: 'Mathématiques', classroom: 'Salle 101' },
-        { id: '2', name: 'Jean Martin', email: 'jean@example.com', subject: 'Français', classroom: 'Salle 102' }
+        { 
+          id: '1', 
+          name: 'Marie Dupont', 
+          email: 'marie@example.com', 
+          sex: 'Femme', 
+          age: 35,
+          address: '123 Rue Principale'
+        },
+        { 
+          id: '2', 
+          name: 'Jean Martin', 
+          email: 'jean@example.com', 
+          sex: 'Homme', 
+          age: 42,
+          address: '456 Avenue Secondaire'
+        }
       ];
       setTeachers(initialTeachers);
       localStorage.setItem('teachers', JSON.stringify(initialTeachers));

@@ -1,35 +1,32 @@
 import React, { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
-import { isValidEmail, isValidPassword } from '../../utils/validation'; // Added
+import { isValidEmail, isValidPassword } from '../../utils/validation';
 
 const RegisterPage: React.FC = () => {
   const { type } = useParams<{ type: 'education' | 'library' }>();
   const { register } = useAuth();
-  const navigate = useNavigate();
-  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Client-side validation
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password) {
       setError('Veuillez remplir tous les champs.');
       setIsLoading(false);
       return;
     }
 
     if (!isValidEmail(email)) {
-      setError('Format d\'email invalide.');
+      setError("Format d'email invalide.");
       setIsLoading(false);
       return;
     }
@@ -41,31 +38,24 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas.');
-      setIsLoading(false); // Also set isLoading to false here
-      return;
-    }
-    
     setError('');
     setIsLoading(true);
-    
+
     try {
       await register(name, email, password, type as 'education' | 'library');
-      // La redirection est gérée dans la fonction register
-    } catch (error) {
-      setError('Une erreur est survenue lors de l\'inscription.');
+    } catch (error: any) {
+      setError(error.message || "Une erreur est survenue lors de l'inscription.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const getTitle = () => {
-    return type === 'education' 
-      ? 'Inscription - Gestion des Enseignements' 
+    return type === 'education'
+      ? 'Inscription - Gestion des Enseignements'
       : 'Inscription - Gestion de Bibliothèque';
   };
-  
+
   const getDescription = () => {
     if (type === 'education') {
       return 'Créez un compte pour accéder à la gestion des enseignements.';
@@ -87,20 +77,42 @@ const RegisterPage: React.FC = () => {
             <span className="sr-only">Institut EDUSYS</span>
             <div className="h-16 w-16 mx-auto bg-blue-800 text-white flex items-center justify-center rounded-full">
               {type === 'education' ? (
-                <svg xmlns="http://www.w3.org/2000/svg\" className="h-8 w-8\" fill="none\" viewBox="0 0 24 24\" stroke="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path d="M12 14l9-5-9-5-9 5 9 5z" />
                   <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
+                  />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                  />
                 </svg>
               )}
             </div>
           </Link>
         </motion.div>
-        
+
         <motion.h2
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -131,8 +143,18 @@ const RegisterPage: React.FC = () => {
               <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-500\" xmlns="http://www.w3.org/2000/svg\" viewBox="0 0 20 20\" fill="currentColor\" aria-hidden="true">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z\" clipRule="evenodd" />
+                    <svg
+                      className="h-5 w-5 text-red-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <div className="ml-3">
@@ -141,7 +163,7 @@ const RegisterPage: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                 Nom complet
@@ -160,7 +182,7 @@ const RegisterPage: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Adresse e-mail
@@ -188,7 +210,7 @@ const RegisterPage: React.FC = () => {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   required
                   value={password}
@@ -209,8 +231,6 @@ const RegisterPage: React.FC = () => {
                 </button>
               </div>
             </div>
-            
-          
 
             <div>
               <motion.button
@@ -221,9 +241,25 @@ const RegisterPage: React.FC = () => {
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-white\" xmlns="http://www.w3.org/2000/svg\" fill="none\" viewBox="0 0 24 24">
-                    <circle className="opacity-25\" cx="12\" cy="12\" r="10\" stroke="currentColor\" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 ) : (
                   <>
@@ -241,15 +277,13 @@ const RegisterPage: React.FC = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Ou
-                </span>
+                <span className="px-2 bg-white text-gray-500">Ou</span>
               </div>
             </div>
 
             <div className="mt-6 text-center">
-              <Link 
-                to={`/login/${type}`} 
+              <Link
+                to={`/login/${type}`}
                 className="font-medium text-blue-800 hover:text-blue-900"
               >
                 Déjà un compte ? Se connecter
@@ -257,7 +291,7 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
         </motion.div>
-        
+
         <div className="mt-6 text-center">
           <Link to="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
             ← Retour à l'accueil

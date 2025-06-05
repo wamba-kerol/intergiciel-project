@@ -32,9 +32,9 @@ function App() {
             {/* Pages d'authentification */}
             <Route path="/login/:type" element={<LoginPage />} />
             <Route path="/register/:type" element={<RegisterPage />} />
-            <Route path="/email-reset" element={<EmailResetPage />} /> {/* Added */}
-            <Route path="/otp-verify" element={<OtpVerifyPage />} /> {/* Added */}
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/email-reset/:type" element={<EmailResetPage />} /> {/* Added */}
+            <Route path="/otp-verify/:type" element={<OtpVerifyPage />} /> {/* Added */}
+            <Route path="/reset-password/:type/:token" element={<ResetPasswordPage />} />
             
             {/* Pages éducation */}
             <Route path="/education/admin" element={<EducationDashboard />} />

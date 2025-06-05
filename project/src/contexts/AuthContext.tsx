@@ -1,229 +1,184 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+   import { useNavigate } from 'react-router-dom';
+   import axios from 'axios';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'teacher' | 'student';
-  type: 'education' | 'library';
-  password: string;
-}
+   interface User {
+     id: string;
+     name: string;
+     email: string;
+     role: 'admin' | 'teacher' | 'student';
+     type: 'education' | 'library';
+   }
 
-interface AuthContextType {
-  currentUser: User | null;
-  login: (email: string, password: string, type: 'education' | 'library') => Promise<void>;
-  register: (name: string, email: string, password: string, type: 'education' | 'library') => Promise<void>;
-  logout: () => void;
-  sendPasswordResetEmail: (email: string) => Promise<void>; // Added
-  verifyOtp: (email: string, otp: string) => Promise<string>; // Added - returns a token
-  resetPassword: (token: string, newPassword: string) => Promise<void>; // Updated signature
-}
+   interface AuthContextType {
+     currentUser: User | null;
+     login: (email: string, password: string, type: 'education' | 'library') => Promise<void>;
+     register: (name: string, email: string, password: string, type: 'education' | 'library') => Promise<void>;
+     logout: () => void;
+     sendPasswordResetEmail: (email: string, type: 'education' | 'library') => Promise<void>;
+     verifyOtp: (email: string, otp: string, type: 'education' | 'library') => Promise<string>;
+resetPassword: (email: string, token: string, newPassword: string, type: 'education' | 'library') => Promise<void>;   }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+   const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+   export function useAuth() {
+     const context = useContext(AuthContext);
+     if (!context) {
+       throw new Error('useAuth must be used within an AuthProvider');
+     }
+     return context;
+   }
 
-// Exemples d'utilisateurs pour la connexion
-const defaultUsers: User[] = [
-  // Utilisateurs éducation
-  {
-    id: '1',
-    name: 'Admin Education',
-    email: 'admin.edu@uds.cm',
-    role: 'admin',
-    type: 'education',
-    password: 'admin123'
-  },
-  {
-    id: '2',
-    name: 'Professeur Martin',
-    email: 'prof.martin@uds.cm',
-    role: 'teacher',
-    type: 'education',
-    password: 'prof123'
-  },
-  {
-    id: '3',
-    name: 'Etudiant Jean',
-    email: 'jean.student@uds.cm',
-    role: 'student',
-    type: 'education',
-    password: 'student123'
-  },
-  
-  // Utilisateurs bibliothèque
-  {
-    id: '4',
-    name: 'Admin Bibliothèque',
-    email: 'admin.lib@uds.cm',
-    role: 'admin',
-    type: 'library',
-    password: 'admin123'
-  },
-  {
-    id: '5',
-    name: 'Bibliothécaire Sophie',
-    email: 'sophie.lib@uds.cm',
-    role: 'teacher',
-    type: 'library',
-    password: 'lib123'
-  },
-  {
-    id: '6',
-    name: 'Étudiant Dupont',
-    email: 'etudiant@example.com',
-    role: 'student',
-    type: 'education',
-    password: 'student123'
-  }
-]
+   export function AuthProvider({ children }: { children: React.ReactNode }) {
+     const [currentUser, setCurrentUser] = useState<User | null>(null);
+     const navigate = useNavigate();
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const navigate = useNavigate();
+     useEffect(() => {
+       const token = localStorage.getItem('token');
+       if (token) {
+         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+       }
+     }, []);
 
-  useEffect(() => {
-    const savedUsers = localStorage.getItem('users');
-    if (!savedUsers) {
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
-    }
-  }, []);
+     useEffect(() => {
+       const savedUser = localStorage.getItem('currentUser');
+       if (savedUser && savedUser !== 'undefined') {
+         try {
+           setCurrentUser(JSON.parse(savedUser));
+         } catch (error) {
+           console.error('Erreur lors du parsing de currentUser:', error);
+           localStorage.removeItem('currentUser');
+         }
+       }
+     }, []);
 
-  // Charger l'utilisateur depuis le localStorage au démarrage
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-  }, []);
+     const login = async (email: string, password: string, type: 'education' | 'library') => {
+       try {
+         const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+         console.log('Envoi login:', { email, password, type, apiUrl });
+         const response = await axios.post(`${apiUrl}/auth/login`, {
+           email,
+           password,
+           type,
+         });
+         console.log('Réponse login:', response.data);
 
-  const login = async (email: string, password: string, type: 'education' | 'library') => {
-    try {
-      const user = defaultUsers.find(u => u.email === email && u.password === password && u.type === type);
-      
-      if (!user) {
-        throw new Error('Email ou mot de passe incorrect');
-      }
+         const { user, token } = response.data;
+         setCurrentUser(user);
+         localStorage.setItem('currentUser', JSON.stringify(user));
+         localStorage.setItem('token', token);
 
-      setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user)); // Corrected localStorage key
-      
-      // Redirection selon le rôle et le type
-      if (type === 'education') {
-        switch (user.role) {
-          case 'admin':
-            navigate('/education/admin');
-            break;
-          case 'teacher':
-            navigate('/education/teacher');
-            break;
-          case 'student':
-            navigate('/education/student');
-            break;
+         if (type === 'education') {
+           switch (user.role) {
+             case 'admin':
+               navigate('/education/admin');
+               break;
+             case 'teacher':
+               navigate('/education/teacher');
+               break;
+             case 'student':
+               navigate('/education/student');
+               break;
+             default:
+               navigate('/education/home');
+               break;
+           }
+         } else {
+           switch (user.role) {
+             case 'admin':
+               navigate('/library/admin');
+               break;
+             default:
+               navigate('/library/home');
+               break;
+           }
+         }
+       } catch (error: any) {
+         console.error('Erreur login:', error.response?.data || error.message);
+         throw new Error(error.response?.data?.message || 'Email ou mot de passe incorrect');
+       }
+     };
+
+     const register = async (name: string, email: string, password: string, type: 'education' | 'library') => {
+       try {
+         const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+         const response = await axios.post(`${apiUrl}/auth/register`, {
+           name,
+           email,
+           password,
+           type,
+         });
+
+         const { user, token } = response.data;
+         setCurrentUser(user);
+         localStorage.setItem('currentUser', JSON.stringify(user));
+         localStorage.setItem('token', token);
+
+         if (type === 'education') {
+           navigate(user.role === 'admin' ? '/education/admin' : '/education/home');
+         } else {
+           navigate('/library/home');
+         }
+       } catch (error: any) {
+         throw new Error(error.response?.data?.message || "Une erreur est survenue lors de l'inscription.");
+       }
+     };
+
+     const logout = async () => {
+       try {
+         const savedUser = localStorage.getItem('currentUser');
+         const user = savedUser && savedUser !== 'undefined' ? JSON.parse(savedUser) : null;
+         const apiUrl = user?.type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+         await axios.post(`${apiUrl}/auth/logout`);
+         setCurrentUser(null);
+         localStorage.removeItem('currentUser');
+         localStorage.removeItem('token');
+         delete axios.defaults.headers.common['Authorization'];
+         navigate('/');
+       } catch (error) {
+         console.error('Erreur lors de la déconnexion:', error);
+       }
+     };
+
+     const sendPasswordResetEmail = async (email: string, type: 'education' | 'library') => {
+       try {
+         const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+         await axios.post(`${apiUrl}/password/sendCode`, { email });
+       } catch (error: any) {
+         throw new Error(error.response?.data?.message || "Erreur lors de l'envoi de l'email de réinitialisation.");
+       }
+     };
+
+     const verifyOtp = async (email: string, otp: string, type: 'education' | 'library') => {
+        try {
+            const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+            const response = await axios.post(`${apiUrl}/password/verificationCode`, { email, code: otp });
+            console.log(response);
+            return response.data.token; // Attendre un champ 'token' dans la réponse
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Code OTP invalide.');
         }
-      } else { // type === 'library'
-        switch (user.role) {
-          case 'admin':
-            navigate('/library/admin');
-            break;
-          // Add cases for other library roles if needed, e.g., 'teacher', 'student'
-          // case 'teacher':
-          //   navigate('/library/teacher-dashboard'); // Example
-          //   break;
-          default:
-            navigate('/library/home'); // Default for other library users
-            break;
-        }
-      }
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const register = async (name: string, email: string, password: string, type: 'education' | 'library') => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    
-    if (users.some(u => u.email === email && u.type === type)) {
-      throw new Error('Cet email est déjà utilisé');
-    }
-    
-    const role = type === 'library' ? 'student' : 'admin' as const;
-    
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      role,
-      type,
-      password
     };
-    
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    setCurrentUser(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    
-    if (type === 'education') {
-      navigate('/education/admin');
-    } else {
-      navigate('/library/home');
-    }
-  };
+     const resetPassword = async (email: string, token: string, new_password: string, type: 'education' | 'library') => {
+        try {
+          console.log(email, token, new_password);
+            const apiUrl = type === 'education' ? 'http://localhost:8001/api' : 'http://localhost:8005/api';
+            await axios.post(`${apiUrl}/password/reset`, { email, token, new_password });
+            navigate('/login/education');
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Erreur lors de la réinitialisation du mot de passe.');
+        }
+    };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('currentUser');
-    navigate('/');
-  };
+     const value = {
+       currentUser,
+       login,
+       register,
+       logout,
+       sendPasswordResetEmail,
+       verifyOtp,
+       resetPassword,
+     };
 
-  const sendPasswordResetEmail = async (email: string) => {
-    // Simulate sending a password reset email
-    console.log(`Password reset email requested for: ${email}`);
-    // In a real app, you would call your backend API here
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-    // You might want to store a temporary token or flag that an email has been sent
-  };
-
-  const verifyOtp = async (email: string, otp: string) => {
-    // Simulate OTP verification
-    console.log(`OTP verification for email: ${email} with OTP: ${otp}`);
-    // In a real app, call your backend API to verify the OTP
-    // If successful, the backend should return a secure, short-lived token
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-    if (otp === "123456") { // Dummy OTP for simulation
-      return "simulated-secure-token-from-backend";
-    }
-    throw new Error("Invalid OTP");
-  };
-
-  const resetPassword = async (token: string, newPassword: string) => {
-    // Simulate resetting the password using the token
-    console.log(`Resetting password with token: ${token} and new password: ${newPassword}`);
-    // In a real app, call your backend API to reset the password
-    // The backend should validate the token before changing the password
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-    // For now, just navigate to login
-    // You might want to clear the current user or token from state/localStorage
-    navigate('/login/education');
-  };
-
-  const value = {
-    currentUser,
-    login,
-    register,
-    logout,
-    sendPasswordResetEmail, // Added
-    verifyOtp, // Added
-    resetPassword // Updated
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+   }

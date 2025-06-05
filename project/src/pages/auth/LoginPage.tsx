@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Link, useParams } from 'react-router-dom'; // Removed useNavigate
+import { Link, useParams, useNavigate } from 'react-router-dom'; // Restored useNavigate
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { isValidEmail } from '../../utils/validation';
+
 const LoginPage: React.FC = () => {
   const { type } = useParams<{ type: 'education' | 'library' }>();
   const { login } = useAuth();
@@ -27,7 +28,7 @@ const LoginPage: React.FC = () => {
     }
 
     if (!isValidEmail(email)) {
-      setError('Format d\'email invalide.');
+      setError("Format d'email invalide.");
       setIsLoading(false);
       return;
     }
@@ -224,7 +225,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <Link to="/email-reset" className="font-medium text-blue-800 hover:text-blue-900">
+                <Link to={`/email-reset/${type}`} className="font-medium text-blue-800 hover:text-blue-900">
                   Mot de passe oublié ?
                 </Link>
               </div>

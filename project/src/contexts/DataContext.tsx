@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Subject } from '../types/Subject';
 
 // Types
 interface Teacher {
@@ -26,6 +27,11 @@ interface Classroom {
   id: string;
   name: string;
   capacity: number;
+}
+interface Matiere{
+  id: string;
+  name: string;
+  coef: number;
 }
 
 interface Course {
@@ -63,6 +69,7 @@ interface DataContextType {
   students: Student[];
   classrooms: Classroom[];
   courses: Course[];
+  subjects:Matiere[];
   
   // Library data
   books: Book[];
@@ -73,6 +80,7 @@ interface DataContextType {
   addStudent: (student: Omit<Student, 'id' | 'grades'>) => void;
   addClassroom: (classroom: Omit<Classroom, 'id'>) => void;
   addCourse: (course: Omit<Course, 'id'>) => void;
+  addSubject: (subject: Omit<Subject, 'id'>) => void;
   updateGrade: (studentId: string, subject: string, grade: number) => void;
   
   // Library methods
@@ -99,6 +107,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   
   // États pour le système de bibliothèque
   const [books, setBooks] = useState<Book[]>([]);
@@ -117,6 +126,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     
     const savedCourses = localStorage.getItem('courses');
     if (savedCourses) setCourses(JSON.parse(savedCourses));
+    
+    const savedSubjects = localStorage.getItem('subjects');
+    if (savedSubjects) setSubjects(JSON.parse(savedSubjects));
     
     const savedBooks = localStorage.getItem('books');
     if (savedBooks) setBooks(JSON.parse(savedBooks));
@@ -175,6 +187,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setBooks(initialBooks);
       localStorage.setItem('books', JSON.stringify(initialBooks));
     }
+    
+    if (!savedSubjects) {
+      const initialSubjects = [
+        { 
+          id: '1', 
+          name: 'Mathématiques', 
+          coef: 2
+        },
+        { 
+          id: '2', 
+          name: 'Français', 
+          coef: 2
+        },
+        { 
+          id: '3', 
+          name: 'Histoire', 
+          coef: 1
+        }
+      ];
+      setSubjects(initialSubjects);
+      localStorage.setItem('subjects', JSON.stringify(initialSubjects));
+    }
   }, []);
   
   // Sauvegarder les données dans localStorage à chaque changement
@@ -193,6 +227,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('courses', JSON.stringify(courses));
   }, [courses]);
+  
+  useEffect(() => {
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+  }, [subjects]);
   
   useEffect(() => {
     localStorage.setItem('books', JSON.stringify(books));
@@ -223,8 +261,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
   
   const addCourse = (course: Omit<Course, 'id'>) => {
-    const newCourse = { ...course, id: Date.now().toString() };
+    const newCourse = {
+      id: Date.now().toString(),
+      ...course
+    };
     setCourses([...courses, newCourse]);
+  };
+
+  const addSubject = (subject: Omit<Subject, 'id'>) => {
+    const newSubject = {
+      id: Date.now().toString(),
+      ...subject
+    };
+    setSubjects([...subjects, newSubject]);
   };
   
   const updateGrade = (studentId: string, subject: string, grade: number) => {
@@ -315,6 +364,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addStudent,
     addClassroom,
     addCourse,
+    addSubject,
     updateGrade,
     addBook,
     updateBook,
@@ -323,5 +373,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     returnBook
   };
   
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={{
+      // Education data
+      teachers,
+      students,
+      classrooms,
+      courses,
+      subjects,
+      
+      // Library data
+      books,
+      loans,
+      
+      // Education methods
+      addTeacher,
+      addStudent,
+      addClassroom,
+      addCourse,
+      addSubject,
+      updateGrade,
+      
+      // Library methods
+      addBook,
+      updateBook,
+      deleteBook,
+      borrowBook,
+      returnBook
+    }}>
+      {children}
+    </DataContext.Provider>
+  );
 }

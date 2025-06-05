@@ -29,6 +29,11 @@ interface ClassroomFormData {
   capacity: number;
 }
 
+interface MatiereFormData {
+  name: string;
+  coef: number;
+}
+
 interface CourseFormData {
   name: string;
   coef: number;
@@ -42,7 +47,7 @@ interface CourseFormData {
 
 const EducationDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const { teachers, students, classrooms, courses, addTeacher, addStudent, addClassroom, addCourse } = useData();
+  const { teachers, students, classrooms, courses, subjects, addTeacher, addStudent, addClassroom, addCourse, addSubject } = useData();
 
   const [activeTab, setActiveTab] = useState('teachers');
   const [showModal, setShowModal] = useState(false);
@@ -80,6 +85,11 @@ const EducationDashboard: React.FC = () => {
     endTime: ''
   });
 
+  const [matiereForm, setMatiereForm] = useState<MatiereFormData>({
+    name: '',
+    coef: 1
+  });
+
   // Fonction pour gérer les changements dans le formulaire de cours
   const handleCourseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -100,8 +110,6 @@ const EducationDashboard: React.FC = () => {
     setStudentForm({ ...studentForm, [e.target.name]: value });
   };
 
-
-
   const handleClassroomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setClassroomForm({
       ...classroomForm,
@@ -109,7 +117,12 @@ const EducationDashboard: React.FC = () => {
     });
   };
 
-
+  const handleMatiereChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMatiereForm({
+      ...matiereForm,
+      [e.target.name]: e.target.name === 'coef' ? parseInt(e.target.value) : e.target.value
+    });
+  };
 
   // Fonctions pour gérer les soumissions
   const handleTeacherSubmit = (e: React.FormEvent) => {
@@ -153,6 +166,13 @@ const EducationDashboard: React.FC = () => {
     setShowModal(false);
   };
 
+  const handleMatiereSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addSubject(matiereForm);
+    setMatiereForm({ name: '', coef: 1 });
+    setShowModal(false);
+  };
+
   // Render le formulaire approprié en fonction de l'onglet actif
   const renderForm = () => {
     switch (activeTab) {
@@ -171,7 +191,6 @@ const EducationDashboard: React.FC = () => {
                 required
               />
             </div>
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
               <input
@@ -200,7 +219,6 @@ const EducationDashboard: React.FC = () => {
                 <option value="Autre">Autre</option>
               </select>
             </div>
-
             <div>
               <label htmlFor="age" className="block text-sm font-medium text-gray-700">Âge</label>
               <input
@@ -214,7 +232,6 @@ const EducationDashboard: React.FC = () => {
                 min="18"
               />
             </div>
-
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700">Adresse</label>
               <input
@@ -227,12 +244,6 @@ const EducationDashboard: React.FC = () => {
                 required
               />
             </div>
-
-
-
-
-
-
             <div className="flex justify-end">
               <button
                 type="button"
@@ -265,18 +276,17 @@ const EducationDashboard: React.FC = () => {
         return (
           <form onSubmit={handleClassroomSubmit} className="space-y-4">
             <div>
-              <label htmlFor="label" className="block text-sm font-medium text-gray-700">Nom de la salle</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nom de la salle</label>
               <input
                 type="text"
-                id="label"
-                name="label"
+                id="name"
+                name="name"
                 value={classroomForm.name}
                 onChange={handleClassroomChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800"
                 required
               />
             </div>
-
             <div>
               <label htmlFor="capacity" className="block text-sm font-medium text-gray-700">Capacité</label>
               <input
@@ -290,7 +300,6 @@ const EducationDashboard: React.FC = () => {
                 required
               />
             </div>
-
             <div className="flex justify-end">
               <button
                 type="button"
@@ -330,7 +339,6 @@ const EducationDashboard: React.FC = () => {
                 ))}
               </select>
             </div>
-
             <div>
               <label htmlFor="classroomId" className="block text-sm font-medium text-gray-700">Salle</label>
               <select
@@ -349,7 +357,6 @@ const EducationDashboard: React.FC = () => {
                 ))}
               </select>
             </div>
-
             <div>
               <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Matière</label>
               <select
@@ -361,14 +368,13 @@ const EducationDashboard: React.FC = () => {
                 required
               >
                 <option value="">Sélectionnez une matière</option>
-                <option value="math">Mathématiques</option>
-                <option value="french">Français</option>
-                <option value="english">Anglais</option>
-                <option value="physics">Physique</option>
-                <option value="chemistry">Chimie</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.name}>
+                    {subject.name}
+                  </option>
+                ))}
               </select>
             </div>
-
             <div>
               <label htmlFor="day" className="block text-sm font-medium text-gray-700">Jour</label>
               <select
@@ -387,7 +393,6 @@ const EducationDashboard: React.FC = () => {
                 <option value="friday">Vendredi</option>
               </select>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Heure de début</label>
@@ -414,17 +419,57 @@ const EducationDashboard: React.FC = () => {
                 />
               </div>
             </div>
-
-            
-
-         
-
-
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
                 className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800"
+              >
+                Ajouter
+              </button>
+            </div>
+          </form>
+        );
+
+      case 'matiere':
+        return (
+          <form onSubmit={handleMatiereSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nom de la matière</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={matiereForm.name}
+                onChange={handleMatiereChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-600 focus:border-blue-800"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="coef" className="block text-sm font-medium text-gray-700">Coefficient</label>
+              <input
+                type="number"
+                id="coef"
+                name="coef"
+                value={matiereForm.coef}
+                onChange={handleMatiereChange}
+                min="1"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-600 focus:border-blue-800"
+                required
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600"
               >
                 Annuler
               </button>
@@ -455,10 +500,8 @@ const EducationDashboard: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</th>
-
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexe</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adresse</th>
-
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -466,15 +509,14 @@ const EducationDashboard: React.FC = () => {
                   <tr key={teacher.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{teacher.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.sex}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.age}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.sex}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.address}</td>
-
                   </tr>
                 ))}
                 {teachers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">Aucun enseignant trouvé</td>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun enseignant trouvé</td>
                   </tr>
                 )}
               </tbody>
@@ -503,12 +545,11 @@ const EducationDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.sex}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.age}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.address}</td>
-                    
                   </tr>
                 ))}
                 {students.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">Aucun élève trouvé</td>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun étudiant trouvé</td>
                   </tr>
                 )}
               </tbody>
@@ -550,13 +591,10 @@ const EducationDashboard: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enseignant</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du cours</th>
-
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salle</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matière</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jour</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure de debut</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure de fin</th>
-
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horaires</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -574,16 +612,42 @@ const EducationDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {course.day.charAt(0).toUpperCase() + course.day.slice(1)}
                     </td>
+                  
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {course.startTime} - {course.endTime}
                     </td>
-               
-                 
                   </tr>
                 ))}
                 {courses.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">Aucun cours trouvé</td>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun cours trouvé</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+
+      case 'matiere':
+        return (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom de la matière</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coefficient</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {subjects.map((subject) => (
+                  <tr key={subject.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{subject.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{subject.coef}</td>
+                  </tr>
+                ))}
+                {subjects.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">Aucune matière trouvée</td>
                   </tr>
                 )}
               </tbody>
@@ -602,6 +666,7 @@ const EducationDashboard: React.FC = () => {
       case 'students': return 'Ajouter un élève';
       case 'classrooms': return 'Ajouter une salle';
       case 'courses': return 'Ajouter un cours';
+      case 'matiere': return 'Ajouter une matière';
       default: return 'Ajouter';
     }
   };
@@ -612,6 +677,7 @@ const EducationDashboard: React.FC = () => {
       case 'students': return 'Ajouter un nouvel élève';
       case 'classrooms': return 'Ajouter une nouvelle salle';
       case 'courses': return 'Ajouter un nouveau cours';
+      case 'matiere': return 'Ajouter une nouvelle matière';
       default: return 'Ajouter';
     }
   };
@@ -619,21 +685,20 @@ const EducationDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar type="education" />
-
       <div className="py-24">
         <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="md:flex md:items-center md:justify-between"
+            className="md:flex md:items-center md: justify-between"
           >
             <div className="flex-1 min-w-0">
               <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
                 Tableau de bord - Gestion des Enseignements
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Gérez les enseignants, les élèves, les salles et les cours
+                Gérez les enseignants, les élèves, les salles, les cours et les matières
               </p>
             </div>
             <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -649,14 +714,13 @@ const EducationDashboard: React.FC = () => {
             </div>
           </motion.div>
         </header>
-
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           className="max-w-7xl mx-auto sm:px-6 lg:px-8"
         >
-          <div className="px-4 py-6 sm:px-0">
+          <div className="px-4 py-6 sm:p-0">
             <div className="bg-white shadow overflow-hidden sm:rounded-lg">
               <div className="border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8" aria-label="Tabs">
@@ -698,9 +762,18 @@ const EducationDashboard: React.FC = () => {
                       } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
                   >
                     <BookOpen className="mr-2 h-5 w-5" />
-                    cour
+                    Cours
                   </button>
-
+                  <button
+                    onClick={() => setActiveTab('matiere')}
+                    className={`${activeTab === 'matiere'
+                      ? 'border-blue-800 text-blue-800'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+                  >
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Matières
+                  </button>
                 </nav>
               </div>
               <div className="px-4 py-5 sm:p-6">
@@ -710,8 +783,6 @@ const EducationDashboard: React.FC = () => {
           </div>
         </motion.div>
       </div>
-
-      {/* Utilisation du composant Modal */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}

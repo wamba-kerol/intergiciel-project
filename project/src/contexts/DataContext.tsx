@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Types
 interface Teacher {
   id: string;
   name: string;
   email: string;
-  subject: string;
-  classroom: string;
+  sex: string;
+  age: number;
+  address: string;
 }
 
 interface Student {
@@ -27,12 +27,22 @@ interface Classroom {
   name: string;
   capacity: number;
 }
+interface Matiere{
+  id: string;
+  name: string;
+  coef: number;
+}
 
 interface Course {
   id: string;
   name: string;
-  level: string;
-  teacher: string;
+  coef: number;
+  teacherId: string;
+  classroomId: string;
+  subject: string;
+  day: string;
+  startTime: string;
+  endTime: string;
 }
 
 interface Book {
@@ -59,20 +69,23 @@ interface DataContextType {
   students: Student[];
   classrooms: Classroom[];
   courses: Course[];
+  
+  // Library data
   books: Book[];
   loans: Loan[];
   addTeacher: (teacher: Omit<Teacher, 'id'>) => void;
   addStudent: (student: Omit<Student, 'id' | 'grades'>) => void;
   addClassroom: (classroom: Omit<Classroom, 'id'>) => void;
   addCourse: (course: Omit<Course, 'id'>) => void;
+  addSubject: (subject: Omit<Subject, 'id'>) => void;
   updateGrade: (studentId: string, subject: string, grade: number) => void;
-  fetchBooks: () => Promise<void>;
-  fetchUserBooks: (userId: string) => Promise<Book[]>;
-  addBook: (book: Omit<Book, 'id'>, userId: string) => Promise<void>;
-  updateBook: (id: string, book: Partial<Book>) => Promise<void>;
-  deleteBook: (id: string) => Promise<void>;
-  borrowBook: (bookId: string, userId: string, returnDate: string) => Promise<void>;
-  returnBook: (loanId: string) => Promise<void>;
+  
+  // Library methods
+  addBook: (book: Omit<Book, 'id'>) => void;
+  updateBook: (id: string, book: Partial<Book>) => void;
+  deleteBook: (id: string) => void;
+  borrowBook: (bookId: string, userId: string, returnDate: string) => void;
+  returnBook: (loanId: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -90,6 +103,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  
+  // États pour le système de bibliothèque
   const [books, setBooks] = useState<Book[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   
@@ -106,13 +121,58 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const savedCourses = localStorage.getItem('courses');
     if (savedCourses) setCourses(JSON.parse(savedCourses));
     
+    const savedSubjects = localStorage.getItem('subjects');
+    if (savedSubjects) setSubjects(JSON.parse(savedSubjects));
+    
     if (!savedTeachers) {
       const initialTeachers = [
-        { id: '1', name: 'Marie Dupont', email: 'marie@example.com', subject: 'Mathématiques', classroom: 'Salle 101' },
-        { id: '2', name: 'Jean Martin', email: 'jean@example.com', subject: 'Français', classroom: 'Salle 102' }
+        { 
+          id: '1', 
+          name: 'Marie Dupont', 
+          email: 'marie@example.com', 
+          sex: 'Femme', 
+          age: 35,
+          address: '123 Rue Principale'
+        },
+        { 
+          id: '2', 
+          name: 'Jean Martin', 
+          email: 'jean@example.com', 
+          sex: 'Homme', 
+          age: 42,
+          address: '456 Avenue Secondaire'
+        }
       ];
       setTeachers(initialTeachers);
       localStorage.setItem('teachers', JSON.stringify(initialTeachers));
+    }
+    
+    if (!savedBooks) {
+      const initialBooks = [
+        { 
+          id: '1', 
+          title: 'Les Misérables', 
+          author: 'Victor Hugo', 
+          description: 'Un chef-d\'œuvre de la littérature française qui suit la vie et les luttes de Jean Valjean.', 
+          available: true 
+        },
+        { 
+          id: '2', 
+          title: 'Le Petit Prince', 
+          author: 'Antoine de Saint-Exupéry', 
+          description: 'Un conte poétique et philosophique sous l\'apparence d\'un conte pour enfants.', 
+          available: true 
+        },
+        { 
+          id: '3', 
+          title: 'Candide', 
+          author: 'Voltaire', 
+          description: 'Un conte philosophique qui remet en question l\'optimisme leibnizien.', 
+          available: true 
+        }
+      ];
+      setBooks(initialBooks);
+      localStorage.setItem('books', JSON.stringify(initialBooks));
     }
   }, []);
   
@@ -131,6 +191,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('courses', JSON.stringify(courses));
   }, [courses]);
+  
+  useEffect(() => {
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+  }, [subjects]);
   
   const addTeacher = (teacher: Omit<Teacher, 'id'>) => {
     const newTeacher = { ...teacher, id: Date.now().toString() };
@@ -152,10 +216,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
   
   const addCourse = (course: Omit<Course, 'id'>) => {
-    const newCourse = { ...course, id: Date.now().toString() };
+    const newCourse = {
+      id: Date.now().toString(),
+      ...course
+    };
     setCourses([...courses, newCourse]);
   };
-  
+
+  const addSubject = (subject: Omit<Subject, 'id'>) => {
+    const newSubject = {
+      id: Date.now().toString(),
+      ...subject
+    };
+    setSubjects([...subjects, newSubject]);
+  };
+
   const updateGrade = (studentId: string, subject: string, grade: number) => {
     setStudents(students.map(student => {
       if (student.id === studentId) {
@@ -169,6 +244,56 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
       return student;
     }));
+  };
+
+  const updateTeacher = (id: string, updatedTeacher: Partial<Teacher>) => {
+    setTeachers(teachers.map(teacher => 
+      teacher.id === id ? { ...teacher, ...updatedTeacher } : teacher
+    ));
+  };
+
+  const deleteTeacher = (id: string) => {
+    setTeachers(teachers.filter(teacher => teacher.id !== id));
+  };
+
+  const updateStudent = (id: string, updatedStudent: Partial<Student>) => {
+    setStudents(students.map(student => 
+      student.id === id ? { ...student, ...updatedStudent } : student
+    ));
+  };
+
+  const deleteStudent = (id: string) => {
+    setStudents(students.filter(student => student.id !== id));
+  };
+
+  const updateClassroom = (id: string, updatedClassroom: Partial<Classroom>) => {
+    setClassrooms(classrooms.map(classroom => 
+      classroom.id === id ? { ...classroom, ...updatedClassroom } : classroom
+    ));
+  };
+
+  const deleteClassroom = (id: string) => {
+    setClassrooms(classrooms.filter(classroom => classroom.id !== id));
+  };
+
+  const updateCourse = (id: string, updatedCourse: Partial<Course>) => {
+    setCourses(courses.map(course => 
+      course.id === id ? { ...course, ...updatedCourse } : course
+    ));
+  };
+
+  const deleteCourse = (id: string) => {
+    setCourses(courses.filter(course => course.id !== id));
+  };
+
+  const updateSubject = (id: string, updatedSubject: Partial<Subject>) => {
+    setSubjects(subjects.map(subject => 
+      subject.id === id ? { ...subject, ...updatedSubject } : subject
+    ));
+  };
+
+  const deleteSubject = (id: string) => {
+    setSubjects(subjects.filter(subject => subject.id !== id));
   };
   
   const fetchBooks = useCallback(async () => {
@@ -386,9 +511,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addStudent,
     addClassroom,
     addCourse,
+    addSubject,
     updateGrade,
-    fetchBooks,
-    fetchUserBooks,
     addBook,
     updateBook,
     deleteBook,
@@ -396,5 +520,45 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     returnBook
   };
   
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={{
+      // Education data
+      teachers,
+      students,
+      classrooms,
+      courses,
+      subjects,
+      
+      // Library data
+      books,
+      loans,
+      
+      // Education methods
+      addTeacher,
+      addStudent,
+      addClassroom,
+      addCourse,
+      addSubject,
+      updateGrade,
+      updateTeacher,
+      deleteTeacher,
+      updateStudent,
+      deleteStudent,
+      updateClassroom,
+      deleteClassroom,
+      updateCourse,
+      deleteCourse,
+      updateSubject,
+      deleteSubject,
+      
+      // Library methods
+      addBook,
+      updateBook,
+      deleteBook,
+      borrowBook,
+      returnBook
+    }}>
+      {children}
+    </DataContext.Provider>
+  );
 }

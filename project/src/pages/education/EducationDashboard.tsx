@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import Navbar from '../../components/layout/Navbar';
 import Modal from '../../components/shared/Modal';
-import StudentForm from '../../components/education/StudentForm';
+import StudentForm from '../../components/forms/StudentForm';
 
 // Définition des interfaces pour les types de formulaires
 interface TeacherFormData {
@@ -16,14 +16,12 @@ interface TeacherFormData {
   address: string;
 }
 
-interface StudentFormData {
+export interface StudentFormData {
   name: string;
   email: string;
-  level: string;
   sex: string;
   age: number;
   address: string;
-  subjects: string[];
 }
 
 interface ClassroomFormData {
@@ -56,11 +54,9 @@ const EducationDashboard: React.FC = () => {
   const [studentForm, setStudentForm] = useState<StudentFormData>({
     name: '',
     email: '',
-    level: '',
     sex: '',
     age: 18,
-    address: '',
-    subjects: []
+    address: ''
   });
 
   const [classroomForm, setClassroomForm] = useState<ClassroomFormData>({
@@ -84,10 +80,7 @@ const EducationDashboard: React.FC = () => {
     setStudentForm({ ...studentForm, [e.target.name]: value });
   };
 
-  const handleStudentSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setStudentForm({ ...studentForm, subjects: selectedOptions });
-  };
+
 
   const handleClassroomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setClassroomForm({
@@ -110,8 +103,12 @@ const EducationDashboard: React.FC = () => {
 
   const handleStudentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addStudent(studentForm);
-    setStudentForm({ name: '', email: '', level: '', sex: '', age: 18, address: '', subjects: [] });
+    addStudent({
+      ...studentForm,
+      level: '',
+      subjects: []
+    });
+    setStudentForm({ name: '', email: '', sex: '', age: 18, address: '' });
     setShowModal(false);
   };
 
@@ -232,9 +229,7 @@ const EducationDashboard: React.FC = () => {
           <StudentForm
             studentForm={studentForm}
             handleStudentChange={handleStudentChange}
-            handleStudentSubjectChange={handleStudentSubjectChange}
             handleStudentSubmit={handleStudentSubmit}
-            courses={courses}
             onCancel={() => setShowModal(false)}
           />
         );
@@ -405,9 +400,7 @@ const EducationDashboard: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexe</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Niveau</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adresse</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matières</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -417,11 +410,8 @@ const EducationDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.sex}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.age}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.level}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.address}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {student.subjects.join(', ')}
-                    </td>
+                    
                   </tr>
                 ))}
                 {students.length === 0 && (

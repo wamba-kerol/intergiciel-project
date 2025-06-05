@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, BookOpen, Clock } from 'lucide-react';
+import { Search, BookOpen } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import Navbar from '../../components/layout/Navbar';
@@ -8,12 +8,11 @@ import Footer from '../../components/home/Footer';
 
 const LibraryHomePage: React.FC = () => {
   const { currentUser } = useAuth();
-  const { books, loans, fetchBooks, borrowBook } = useData();
+  const { books, fetchBooks, borrowBook } = useData();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [showBorrowModal, setShowBorrowModal] = useState(false);
-  const [selectedBook, setSelectedBook] = useState<typeof books[0] | null>(null);
-  const [returnDate, setReturnDate] = useState('');
+  const [pendingRequests, setPendingRequests] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   // Charger les livres au montage
   useEffect(() => {
@@ -33,29 +32,26 @@ const LibraryHomePage: React.FC = () => {
   });
   
   // Fonction pour emprunter un livre
-  const handleBorrow = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (selectedBook && currentUser) {
-      try {
-        await borrowBook(selectedBook.id, currentUser.id, returnDate);
-        setShowBorrowModal(false);
-        setSelectedBook(null);
-        setReturnDate('');
-        fetchBooks(); // Rafraîchir les livres après emprunt
-      } catch (error) {
-        console.error('Error borrowing book:', error);
+  const handleBorrow = async (bookId: string) => {
+    try {
+      setError(null);
+      if (!currentUser || !currentUser.id) {
+        throw new Error('Utilisateur non connecté ou ID manquant');
       }
+      console.log('Calling borrowBook with:', { bookId, userId: currentUser.id });
+      await borrowBook(bookId, currentUser.id);
+      setPendingRequests(prev => [...prev, bookId]);
+      fetchBooks();
+    } catch (error: any) {
+      console.error('Error borrowing book:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la demande d\'emprunt. Veuillez réessayer.';
+      setError(errorMessage);
     }
   };
-  
-  // Calculer la date minimum (aujourd'hui) et maximum (30 jours à partir d'aujourd'hui)
-  const today = new Date();
-  const minDate = today.toISOString().split('T')[0];
-  
-  const maxDate = new Date();
-  maxDate.setDate(today.getDate() + 30);
-  const maxDateStr = maxDate.toISOString().split('T')[0];
   
   return (
     <div className="min-h-screen bg-gray-100">
@@ -122,6 +118,16 @@ const LibraryHomePage: React.FC = () => {
           </p>
         </div>
         
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+          >
+            {error}
+          </motion.div>
+        )}
+        
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {filteredBooks.map((book) => (
             <motion.div 
@@ -141,22 +147,23 @@ const LibraryHomePage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{book.title}</h3>
                 <p className="text-sm text-gray-600 mb-4">par {book.author}</p>
                 <p className="text-gray-600 mb-6 flex-1 line-clamp-3">{book.genre || 'Genre non spécifié'}</p>
-                <button
-                  onClick={() => {
-                    if (book.available) {
-                      setSelectedBook(book);
-                      setShowBorrowModal(true);
-                    }
-                  }}
-                  disabled={!book.available}
-                  className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-                    book.available 
-                      ? 'bg-blue-800 hover:bg-blue-900' 
-                      : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  {book.available ? 'Emprunter' : 'Indisponible'}
-                </button>
+                {book.available && !pendingRequests.includes(book.id) ? (
+                  <button
+                    onClick={() => book.id && handleBorrow(book.id)}
+                    disabled={!book.available}
+                    className="w-full py-2 px-4 rounded-md text-white font-medium bg-blue-800 hover:bg-blue-900"
+                  >
+                    Emprunter
+                  </button>
+                ) : book.available ? (
+                  <span className="w-full py-2 px-4 rounded-md text-blue-500 font-medium text-center">
+                    Demande envoyée
+                  </span>
+                ) : (
+                  <span className="w-full py-2 px-4 rounded-md text-gray-500 font-medium text-center">
+                    Indisponible
+                  </span>
+                )}
               </div>
             </motion.div>
           ))}
@@ -174,77 +181,6 @@ const LibraryHomePage: React.FC = () => {
       </div>
       
       <Footer />
-      
-      {/* Modal d'emprunt */}
-      {showBorrowModal && selectedBook && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 opacity-75 transition-opacity" aria-hidden="true"></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true"></span>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-            >
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <Clock className="h-6 w-6 text-blue-800" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Emprunter "{selectedBook.title}"
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Veuillez indiquer la date de retour prévue pour ce livre. La durée maximale d'emprunt est de 30 jours.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <form onSubmit={handleBorrow} className="mt-5">
-                  <div>
-                    <label htmlFor="return-date" className="block text-sm font-medium text-gray-700">
-                      Date de retour
-                    </label>
-                    <input
-                      type="date"
-                      id="return-date"
-                      name="return-date"
-                      min={minDate}
-                      max={maxDateStr}
-                      value={returnDate}
-                      onChange={(e) => setReturnDate(e.target.value)}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-800 focus:border-blue-800 sm:text-sm"
-                    />
-                  </div>
-                  
-                  <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                    <button
-                      type="submit"
-                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-800 text-base font-medium text-white hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800 sm:col-start-2 sm:text-sm"
-                    >
-                      Confirmer l'emprunt
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowBorrowModal(false);
-                        setSelectedBook(null);
-                      }}
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-800 sm:mt-0 sm:col-start-1 sm:text-sm"
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import axios from 'axios';
+import { Subject } from '../types/Subject';
 
 // Types
 interface Teacher {
@@ -8,6 +10,8 @@ interface Teacher {
   sex: string;
   age: number;
   address: string;
+  subject?: string;
+  classroom?: string;
 }
 
 interface Student {
@@ -26,11 +30,6 @@ interface Classroom {
   id: string;
   name: string;
   capacity: number;
-}
-interface Matiere{
-  id: string;
-  name: string;
-  coef: number;
 }
 
 interface Course {
@@ -51,6 +50,7 @@ interface Book {
   author: string;
   publication_date?: string;
   genre?: string;
+  description?: string;
   available: boolean;
   owner_id?: string;
 }
@@ -65,27 +65,43 @@ interface Loan {
 }
 
 interface DataContextType {
+  // Education data
   teachers: Teacher[];
   students: Student[];
   classrooms: Classroom[];
   courses: Course[];
+  subjects: Subject[];
   
   // Library data
   books: Book[];
   loans: Loan[];
+  
+  // Education methods
   addTeacher: (teacher: Omit<Teacher, 'id'>) => void;
   addStudent: (student: Omit<Student, 'id' | 'grades'>) => void;
   addClassroom: (classroom: Omit<Classroom, 'id'>) => void;
   addCourse: (course: Omit<Course, 'id'>) => void;
   addSubject: (subject: Omit<Subject, 'id'>) => void;
   updateGrade: (studentId: string, subject: string, grade: number) => void;
+  updateTeacher: (id: string, updatedTeacher: Partial<Teacher>) => void;
+  deleteTeacher: (id: string) => void;
+  updateStudent: (id: string, updatedStudent: Partial<Student>) => void;
+  deleteStudent: (id: string) => void;
+  updateClassroom: (id: string, updatedClassroom: Partial<Classroom>) => void;
+  deleteClassroom: (id: string) => void;
+  updateCourse: (id: string, updatedCourse: Partial<Course>) => void;
+  deleteCourse: (id: string) => void;
+  updateSubject: (id: string, updatedSubject: Partial<Subject>) => void;
+  deleteSubject: (id: string) => void;
   
   // Library methods
-  addBook: (book: Omit<Book, 'id'>) => void;
-  updateBook: (id: string, book: Partial<Book>) => void;
-  deleteBook: (id: string) => void;
-  borrowBook: (bookId: string, userId: string, returnDate: string) => void;
-  returnBook: (loanId: string) => void;
+  fetchBooks: () => Promise<void>;
+  fetchUserBooks: (userId: string) => Promise<Book[]>;
+  addBook: (book: Omit<Book, 'id'>, userId: string) => Promise<void>;
+  updateBook: (id: string, book: Partial<Book>) => Promise<void>;
+  deleteBook: (id: string) => Promise<void>;
+  borrowBook: (bookId: string, userId: string) => Promise<void>;
+  returnBook: (loanId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -99,15 +115,18 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  // États pour le système d'éducation
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   
   // États pour le système de bibliothèque
   const [books, setBooks] = useState<Book[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
-  
+
+  // Charger les données depuis localStorage au démarrage
   useEffect(() => {
     const savedTeachers = localStorage.getItem('teachers');
     if (savedTeachers) setTeachers(JSON.parse(savedTeachers));
@@ -124,101 +143,97 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const savedSubjects = localStorage.getItem('subjects');
     if (savedSubjects) setSubjects(JSON.parse(savedSubjects));
     
+    const savedLoans = localStorage.getItem('loans');
+    if (savedLoans) setLoans(JSON.parse(savedLoans));
+
+    // Initialiser avec des données de démonstration si vide
     if (!savedTeachers) {
       const initialTeachers = [
-        { 
-          id: '1', 
-          name: 'Marie Dupont', 
-          email: 'marie@example.com', 
-          sex: 'Femme', 
+        {
+          id: '1',
+          name: 'Marie Dupont',
+          email: 'marie@example.com',
+          sex: 'Femme',
           age: 35,
-          address: '123 Rue Principale'
+          address: '123 Rue Principale',
+          subject: 'Mathématiques',
+          classroom: 'Salle 101',
         },
-        { 
-          id: '2', 
-          name: 'Jean Martin', 
-          email: 'jean@example.com', 
-          sex: 'Homme', 
+        {
+          id: '2',
+          name: 'Jean Martin',
+          email: 'jean@example.com',
+          sex: 'Homme',
           age: 42,
-          address: '456 Avenue Secondaire'
-        }
+          address: '456 Avenue Secondaire',
+          subject: 'Français',
+          classroom: 'Salle 102',
+        },
       ];
       setTeachers(initialTeachers);
       localStorage.setItem('teachers', JSON.stringify(initialTeachers));
     }
-    
-    if (!savedBooks) {
-      const initialBooks = [
-        { 
-          id: '1', 
-          title: 'Les Misérables', 
-          author: 'Victor Hugo', 
-          description: 'Un chef-d\'œuvre de la littérature française qui suit la vie et les luttes de Jean Valjean.', 
-          available: true 
-        },
-        { 
-          id: '2', 
-          title: 'Le Petit Prince', 
-          author: 'Antoine de Saint-Exupéry', 
-          description: 'Un conte poétique et philosophique sous l\'apparence d\'un conte pour enfants.', 
-          available: true 
-        },
-        { 
-          id: '3', 
-          title: 'Candide', 
-          author: 'Voltaire', 
-          description: 'Un conte philosophique qui remet en question l\'optimisme leibnizien.', 
-          available: true 
-        }
+
+    if (!savedSubjects) {
+      const initialSubjects = [
+        { id: '1', name: 'Mathématiques', coef: 2 },
+        { id: '2', name: 'Français', coef: 2 },
+        { id: '3', name: 'Histoire', coef: 1 },
       ];
-      setBooks(initialBooks);
-      localStorage.setItem('books', JSON.stringify(initialBooks));
+      setSubjects(initialSubjects);
+      localStorage.setItem('subjects', JSON.stringify(initialSubjects));
     }
   }, []);
-  
+
+  // Sauvegarder les données dans localStorage à chaque changement
   useEffect(() => {
     localStorage.setItem('teachers', JSON.stringify(teachers));
   }, [teachers]);
-  
+
   useEffect(() => {
     localStorage.setItem('students', JSON.stringify(students));
   }, [students]);
-  
+
   useEffect(() => {
     localStorage.setItem('classrooms', JSON.stringify(classrooms));
   }, [classrooms]);
-  
+
   useEffect(() => {
     localStorage.setItem('courses', JSON.stringify(courses));
   }, [courses]);
-  
+
   useEffect(() => {
     localStorage.setItem('subjects', JSON.stringify(subjects));
   }, [subjects]);
-  
+
+  useEffect(() => {
+    localStorage.setItem('loans', JSON.stringify(loans));
+  }, [loans]);
+
+  // Méthodes pour le système d'éducation
   const addTeacher = (teacher: Omit<Teacher, 'id'>) => {
     const newTeacher = { ...teacher, id: Date.now().toString() };
     setTeachers([...teachers, newTeacher]);
   };
-  
+
   const addStudent = (student: Omit<Student, 'id' | 'grades'>) => {
-    const newStudent = { 
-      ...student, 
+    const newStudent = {
+      ...student,
       id: Date.now().toString(),
-      grades: {} 
+      grades: {},
     };
     setStudents([...students, newStudent]);
   };
-  
+
   const addClassroom = (classroom: Omit<Classroom, 'id'>) => {
     const newClassroom = { ...classroom, id: Date.now().toString() };
     setClassrooms([...classrooms, newClassroom]);
   };
-  
+
   const addCourse = (course: Omit<Course, 'id'>) => {
     const newCourse = {
       id: Date.now().toString(),
-      ...course
+      ...course,
     };
     setCourses([...courses, newCourse]);
   };
@@ -226,30 +241,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const addSubject = (subject: Omit<Subject, 'id'>) => {
     const newSubject = {
       id: Date.now().toString(),
-      ...subject
+      ...subject,
     };
     setSubjects([...subjects, newSubject]);
   };
 
   const updateGrade = (studentId: string, subject: string, grade: number) => {
-    setStudents(students.map(student => {
-      if (student.id === studentId) {
-        return {
-          ...student,
-          grades: {
-            ...student.grades,
-            [subject]: grade
-          }
-        };
-      }
-      return student;
-    }));
+    setStudents(
+      students.map(student => {
+        if (student.id === studentId) {
+          return {
+            ...student,
+            grades: {
+              ...student.grades,
+              [subject]: grade,
+            },
+          };
+        }
+        return student;
+      })
+    );
   };
 
   const updateTeacher = (id: string, updatedTeacher: Partial<Teacher>) => {
-    setTeachers(teachers.map(teacher => 
-      teacher.id === id ? { ...teacher, ...updatedTeacher } : teacher
-    ));
+    setTeachers(
+      teachers.map(teacher =>
+        teacher.id === id ? { ...teacher, ...updatedTeacher } : teacher
+      )
+    );
   };
 
   const deleteTeacher = (id: string) => {
@@ -257,9 +276,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateStudent = (id: string, updatedStudent: Partial<Student>) => {
-    setStudents(students.map(student => 
-      student.id === id ? { ...student, ...updatedStudent } : student
-    ));
+    setStudents(
+      students.map(student =>
+        student.id === id ? { ...student, ...updatedStudent } : student
+      )
+    );
   };
 
   const deleteStudent = (id: string) => {
@@ -267,9 +288,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateClassroom = (id: string, updatedClassroom: Partial<Classroom>) => {
-    setClassrooms(classrooms.map(classroom => 
-      classroom.id === id ? { ...classroom, ...updatedClassroom } : classroom
-    ));
+    setClassrooms(
+      classrooms.map(classroom =>
+        classroom.id === id ? { ...classroom, ...updatedClassroom } : classroom
+      )
+    );
   };
 
   const deleteClassroom = (id: string) => {
@@ -277,9 +300,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateCourse = (id: string, updatedCourse: Partial<Course>) => {
-    setCourses(courses.map(course => 
-      course.id === id ? { ...course, ...updatedCourse } : course
-    ));
+    setCourses(
+      courses.map(course =>
+        course.id === id ? { ...course, ...updatedCourse } : course
+      )
+    );
   };
 
   const deleteCourse = (id: string) => {
@@ -287,15 +312,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateSubject = (id: string, updatedSubject: Partial<Subject>) => {
-    setSubjects(subjects.map(subject => 
-      subject.id === id ? { ...subject, ...updatedSubject } : subject
-    ));
+    setSubjects(
+      subjects.map(subject =>
+        subject.id === id ? { ...subject, ...updatedSubject } : subject
+      )
+    );
   };
 
   const deleteSubject = (id: string) => {
     setSubjects(subjects.filter(subject => subject.id !== id));
   };
-  
+
+  // Méthodes pour le système de bibliothèque
   const fetchBooks = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -317,6 +345,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         author: book.author,
         publication_date: book.publication_date,
         genre: book.genre,
+        description: book.description,
         available: book.status === 'available',
         owner_id: book.owner_id?.toString(),
       }));
@@ -350,6 +379,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         author: book.author,
         publication_date: book.publication_date,
         genre: book.genre,
+        description: book.description,
         available: book.status === 'available',
         owner_id: book.owner_id?.toString(),
       }));
@@ -373,6 +403,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         author: book.author,
         publication_date: book.publication_date || null,
         genre: book.genre || null,
+        description: book.description || null,
         status: book.available ? 'available' : 'borrowed',
         owner_id: userId,
       };
@@ -389,6 +420,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         author: response.data.author,
         publication_date: response.data.publication_date,
         genre: response.data.genre,
+        description: response.data.description,
         available: response.data.status === 'available',
         owner_id: response.data.owner_id?.toString(),
       };
@@ -412,6 +444,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         author: book.author,
         publication_date: book.publication_date || null,
         genre: book.genre || null,
+        description: book.description || null,
         status: book.available ? 'available' : 'borrowed',
       };
 
@@ -427,6 +460,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         author: response.data.author,
         publication_date: response.data.publication_date,
         genre: response.data.genre,
+        description: response.data.description,
         available: response.data.status === 'available',
         owner_id: response.data.owner_id?.toString(),
       };
@@ -458,53 +492,87 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const borrowBook = async (bookId: string, userId: string, returnDate: string) => {
+  const borrowBook = async (bookId: string, userId: string) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
 
-      // Envoyer la demande d'emprunt
-      await axios.post(`http://localhost:8006/api/usecases/notification/loanrequest/${bookId}/${userId}`, {
-        return_date: returnDate
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      console.log('Borrow book params:', { bookId, userId, token: token.substring(0, 10) + '...' });
 
-      // Ne pas modifier l'état local, attendre que le backend mette à jour la disponibilité
-    } catch (error) {
-      console.error('Error requesting loan:', error);
+      const response = await axios.post(
+        `http://localhost:8006/api/usecases/notification/loanrequest/${bookId}/${userId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log('Loan request response:', response.data);
+    } catch (error: any) {
+      console.error('Error requesting loan:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       throw error;
     }
   };
 
   const returnBook = async (loanId: string) => {
-    const loan = loans.find(l => l.id === loanId);
-    if (!loan) return;
-    
-    setLoans(loans.map(l => {
-      if (l.id === loanId) {
-        return { ...l, returned: true };
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
-      return l;
-    }));
-    
-    setBooks(books.map(book => {
-      if (book.id === loan.bookId) {
-        return { ...book, available: true };
+
+      const loan = loans.find(l => l.id === loanId);
+      if (!loan) {
+        throw new Error('Loan not found');
       }
-      return book;
-    }));
+
+      await axios.post(
+        `http://localhost:8006/api/ressources/loan/return/${loanId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setLoans(
+        loans.map(l => {
+          if (l.id === loanId) {
+            return { ...l, returned: true };
+          }
+          return l;
+        })
+      );
+
+      setBooks(
+        books.map(book => {
+          if (book.id === loan.bookId) {
+            return { ...book, available: true };
+          }
+          return book;
+        })
+      );
+    } catch (error) {
+      console.error('Error returning book:', error);
+      throw error;
+    }
   };
 
-  const value = {
+  const value: DataContextType = {
     teachers,
     students,
     classrooms,
     courses,
+    subjects,
     books,
     loans,
     addTeacher,
@@ -513,52 +581,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     addCourse,
     addSubject,
     updateGrade,
+    updateTeacher,
+    deleteTeacher,
+    updateStudent,
+    deleteStudent,
+    updateClassroom,
+    deleteClassroom,
+    updateCourse,
+    deleteCourse,
+    updateSubject,
+    deleteSubject,
+    fetchBooks,
+    fetchUserBooks,
     addBook,
     updateBook,
     deleteBook,
     borrowBook,
-    returnBook
+    returnBook,
   };
-  
-  return (
-    <DataContext.Provider value={{
-      // Education data
-      teachers,
-      students,
-      classrooms,
-      courses,
-      subjects,
-      
-      // Library data
-      books,
-      loans,
-      
-      // Education methods
-      addTeacher,
-      addStudent,
-      addClassroom,
-      addCourse,
-      addSubject,
-      updateGrade,
-      updateTeacher,
-      deleteTeacher,
-      updateStudent,
-      deleteStudent,
-      updateClassroom,
-      deleteClassroom,
-      updateCourse,
-      deleteCourse,
-      updateSubject,
-      deleteSubject,
-      
-      // Library methods
-      addBook,
-      updateBook,
-      deleteBook,
-      borrowBook,
-      returnBook
-    }}>
-      {children}
-    </DataContext.Provider>
-  );
+
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

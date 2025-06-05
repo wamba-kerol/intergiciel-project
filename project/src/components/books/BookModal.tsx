@@ -18,6 +18,30 @@ interface BookModalProps {
   onSubmit: (formData: BookFormData) => Promise<void>;
 }
 
+// Liste des genres correspondant à GenreEnum du backend
+const genres = [
+  'Novel',
+  'Science Fiction',
+  'Fantasy',
+  'Mystery',
+  'Historical',
+  'Biography',
+  'Poetry',
+  'Theater',
+  'Essay',
+  'Youth',
+  'Comic/Manga',
+  'Horror',
+  'Adventure',
+  'Romance',
+  'Short Story',
+  'Documentary',
+  'Cooking',
+  'Art',
+  'Computer Science',
+  'Science'
+];
+
 const BookModal: React.FC<BookModalProps> = ({
   isOpen,
   isEditing,
@@ -35,7 +59,9 @@ const BookModal: React.FC<BookModalProps> = ({
     }
   }, [isOpen, initialData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -95,7 +121,7 @@ const BookModal: React.FC<BookModalProps> = ({
                       name="title"
                       value={formData.title}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
@@ -109,7 +135,7 @@ const BookModal: React.FC<BookModalProps> = ({
                       name="author"
                       value={formData.author}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
@@ -124,21 +150,27 @@ const BookModal: React.FC<BookModalProps> = ({
                       value={formData.publication_date || ''}
                       onChange={handleChange}
                       placeholder="JJ/MM/AAAA"
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
                     <label htmlFor="genre" className="block text-sm font-medium text-gray-700">
                       Genre
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="genre"
                       name="genre"
                       value={formData.genre || ''}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-600"
+                    >
+                      <option value="">Sélectionner un genre</option>
+                      {genres.map(genre => (
+                        <option key={genre} value={genre}>
+                          {genre}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex items-center">
                     <input
@@ -157,7 +189,7 @@ const BookModal: React.FC<BookModalProps> = ({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-blue-500"
                     >
                       Annuler
                     </button>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Search, User, BookOpen, School, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface NavbarProps {
   transparent?: boolean;
@@ -13,6 +14,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -48,14 +50,15 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, withSearch = false
       return [
         { name: 'Accueil', path: '/education/dashboard', icon: <Home className="h-5 w-5" />, isAnchor: false },
         { name: 'Cours', path: '/education/courses', icon: <School className="h-5 w-5" />, isAnchor: false },
-        { name: 'Profil', path: '/education/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
+        { name: 'Profil', path: currentUser ? `/education/profile/${currentUser.id}` : '/education/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
       ];
     } else {
       return [
         { name: 'Accueil', path: '/library/home', icon: <Home className="h-5 w-5" />, isAnchor: false },
         { name: 'Livres', path: '/library/admin', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
         { name: 'À propos', path: '#about', icon: <BookOpen className="h-5 w-5" />, isAnchor: false },
-        { name: 'Profil', path: '/library/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
+        { name: 'Profil', path: currentUser ? `/library/profile/${currentUser.id}` : '/library/profile', icon: <User className="h-5 w-5" />, isAnchor: false },
+        { name: 'Profil', path: '/library/profile/:userId', icon: <User className="h-5 w-5" />, isAnchor: false },
       ];
     }
   };

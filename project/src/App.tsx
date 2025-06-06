@@ -15,6 +15,7 @@ import OtpVerifyPage from './pages/auth/OtpVerifyPage'; // Added
 import EducationDashboard from './pages/education/EducationDashboard';
 import TeacherDashboard from './pages/education/TeacherDashboard';
 import StudentDashboard from './pages/education/StudentDashboard';
+import ProfilPage from './pages/profil/ProfilPage';
 
 // Pages bibliothèque
 import LibraryDashboard from './pages/library/LibraryDashboard';
@@ -40,7 +41,7 @@ function App() {
             <Route path="/education/admin" element={<EducationDashboard />} />
             <Route path="/education/teacher" element={<TeacherDashboard />} />
             <Route path="/education/student" element={<StudentDashboard />} />
-            
+            <Route path="/education/profile/:userId" element={<ProfilPage />} />
             {/* Pages bibliothèque */}
             <Route path="/library/admin" element={<LibraryDashboard />} />
             <Route path="/library/home" element={<LibraryHomePage />} />

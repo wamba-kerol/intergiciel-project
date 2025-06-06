@@ -62,6 +62,16 @@ interface Loan {
   loanDate: string;
   returnDate: string;
   returned: boolean;
+  requestDate?: string; // Added for Borrowing entity
+  status?: string; // Added for Borrowing entity
+}
+
+// Added User type for profile page
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'teacher' | 'student';
 }
 
 interface DataContextType {
@@ -102,6 +112,11 @@ interface DataContextType {
   deleteBook: (id: string) => Promise<void>;
   borrowBook: (bookId: string, userId: string) => Promise<void>;
   returnBook: (loanId: string) => Promise<void>;
+  
+  // Added for profile page
+  fetchUserById: (userId: string) => Promise<User | null>;
+  fetchUserBorrowings: (userId: string) => Promise<Loan[]>;
+  fetchUserBorrows: (userId: string) => Promise<Loan[]>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -125,6 +140,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // États pour le système de bibliothèque
   const [books, setBooks] = useState<Book[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  
+  // Added: State for users
+  const [users, setUsers] = useState<User[]>([]);
 
   // Charger les données depuis localStorage au démarrage
   useEffect(() => {
@@ -145,6 +163,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     
     const savedLoans = localStorage.getItem('loans');
     if (savedLoans) setLoans(JSON.parse(savedLoans));
+
+    const savedBooks = localStorage.getItem('books');
+    if (savedBooks) setBooks(JSON.parse(savedBooks));
 
     // Initialiser avec des données de démonstration si vide
     if (!savedTeachers) {
@@ -183,7 +204,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSubjects(initialSubjects);
       localStorage.setItem('subjects', JSON.stringify(initialSubjects));
     }
-  }, []);
+
+    // Added: Initialize users from teachers and students
+    const initialUsers: User[] = [
+      ...teachers.map(t => ({ id: t.id, name: t.name, email: t.email, role: 'teacher' as const })),
+      ...students.map(s => ({ id: s.id, name: s.name, email: s.email, role: 'student' as const })),
+    ];
+    setUsers(initialUsers);
+  }, [teachers, students]);
 
   // Sauvegarder les données dans localStorage à chaque changement
   useEffect(() => {
@@ -210,10 +238,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('loans', JSON.stringify(loans));
   }, [loans]);
 
+  useEffect(() => {
+    localStorage.setItem('books', JSON.stringify(books));
+  }, [books]);
+
+  // Added: Save users to localStorage
+  useEffect(() => {
+    localStorage.setItem('users', JSON.stringify(users));
+  }, [users]);
+
   // Méthodes pour le système d'éducation
   const addTeacher = (teacher: Omit<Teacher, 'id'>) => {
     const newTeacher = { ...teacher, id: Date.now().toString() };
     setTeachers([...teachers, newTeacher]);
+    setUsers([...users, { id: newTeacher.id, name: newTeacher.name, email: newTeacher.email, role: 'teacher' }]);
   };
 
   const addStudent = (student: Omit<Student, 'id' | 'grades'>) => {
@@ -223,6 +261,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       grades: {},
     };
     setStudents([...students, newStudent]);
+    setUsers([...users, { id: newStudent.id, name: newStudent.name, email: newStudent.email, role: 'student' }]);
   };
 
   const addClassroom = (classroom: Omit<Classroom, 'id'>) => {
@@ -269,10 +308,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         teacher.id === id ? { ...teacher, ...updatedTeacher } : teacher
       )
     );
+    setUsers(
+      users.map(user =>
+        user.id === id && user.role === 'teacher'
+          ? { ...user, name: updatedTeacher.name || user.name, email: updatedTeacher.email || user.email }
+          : user
+      )
+    );
   };
 
   const deleteTeacher = (id: string) => {
     setTeachers(teachers.filter(teacher => teacher.id !== id));
+    setUsers(users.filter(user => !(user.id === id && user.role === 'teacher')));
   };
 
   const updateStudent = (id: string, updatedStudent: Partial<Student>) => {
@@ -281,10 +328,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         student.id === id ? { ...student, ...updatedStudent } : student
       )
     );
+    setUsers(
+      users.map(user =>
+        user.id === id && user.role === 'student'
+          ? { ...user, name: updatedStudent.name || user.name, email: updatedStudent.email || user.email }
+          : user
+      )
+    );
   };
 
   const deleteStudent = (id: string) => {
     setStudents(students.filter(student => student.id !== id));
+    setUsers(users.filter(user => !(user.id === id && user.role === 'student')));
   };
 
   const updateClassroom = (id: string, updatedClassroom: Partial<Classroom>) => {
@@ -351,6 +406,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }));
 
       setBooks(mappedBooks);
+      localStorage.setItem('books', JSON.stringify(mappedBooks));
     } catch (error) {
       console.error('Error fetching books:', error);
     }
@@ -426,6 +482,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       };
 
       setBooks([...books, newBook]);
+      localStorage.setItem('books', JSON.stringify([...books, newBook]));
     } catch (error) {
       console.error('Error adding book:', error);
       throw error;
@@ -465,7 +522,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         owner_id: response.data.owner_id?.toString(),
       };
 
-      setBooks(books.map(b => (b.id === id ? updatedBook : b)));
+      const updatedBooks = books.map(b => (b.id === id ? updatedBook : b));
+      setBooks(updatedBooks);
+      localStorage.setItem('books', JSON.stringify(updatedBooks));
     } catch (error) {
       console.error('Error updating book:', error);
       throw error;
@@ -485,7 +544,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      setBooks(books.filter(book => book.id !== id));
+      const updatedBooks = books.filter(book => book.id !== id);
+      setBooks(updatedBooks);
+      localStorage.setItem('books', JSON.stringify(updatedBooks));
     } catch (error) {
       console.error('Error deleting book:', error);
       throw error;
@@ -512,6 +573,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       );
 
       console.log('Loan request response:', response.data);
+
+      const newLoan: Loan = {
+        id: response.data.id?.toString() || Date.now().toString(),
+        bookId,
+        userId,
+        loanDate: new Date().toISOString(),
+        returnDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks from now
+        returned: false,
+        requestDate: new Date().toISOString(),
+        status: 'pending',
+      };
+
+      setLoans([...loans, newLoan]);
+      setBooks(books.map(book => book.id === bookId ? { ...book, available: false } : book));
+      localStorage.setItem('loans', JSON.stringify([...loans, newLoan]));
     } catch (error: any) {
       console.error('Error requesting loan:', {
         message: error.message,
@@ -544,14 +620,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       );
 
-      setLoans(
-        loans.map(l => {
-          if (l.id === loanId) {
-            return { ...l, returned: true };
-          }
-          return l;
-        })
-      );
+      const updatedLoans = loans.map(l => {
+        if (l.id === loanId) {
+          return { ...l, returned: true, returnDate: new Date().toISOString() };
+        }
+        return l;
+      });
+      setLoans(updatedLoans);
+      localStorage.setItem('loans', JSON.stringify(updatedLoans));
 
       setBooks(
         books.map(book => {
@@ -566,6 +642,124 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
   };
+
+  // Added: Methods for profile page
+  const fetchUserById = useCallback(async (userId: string): Promise<User | null> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Try to find in local state first
+      let user = users.find(u => u.id === userId);
+      if (user) return user;
+
+      // Fallback to API if available (adjust endpoint as needed)
+      const response = await axios.get(`http://localhost:8006/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      user = {
+        id: response.data.id.toString(),
+        name: response.data.name,
+        email: response.data.email,
+        role: response.data.role || 'student', // Adjust based on API response
+      };
+
+      setUsers([...users, user]);
+      return user;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      return null;
+    }
+  }, [users]);
+
+  const fetchUserBorrowings = useCallback(async (userId: string): Promise<Loan[]> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Filter loans where status is 'pending' (loan requests)
+      const userLoans = loans.filter(loan => loan.userId === userId && loan.status === 'pending');
+
+      // Fetch from API if needed (adjust endpoint)
+      const response = await axios.get(`http://localhost:8006/api/ressources/loan/requests/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const apiLoans: Loan[] = response.data.map((loan: any) => ({
+        id: loan.id.toString(),
+        bookId: loan.bookId.toString(),
+        userId: loan.userId.toString(),
+        loanDate: loan.loanDate,
+        returnDate: loan.returnDate,
+        returned: loan.returned,
+        requestDate: loan.requestDate,
+        status: loan.status,
+      }));
+
+      const combinedLoans = [...userLoans, ...apiLoans.filter(l => !userLoans.some(ul => ul.id === l.id))];
+      return combinedLoans.map(loan => ({
+        ...loan,
+        bookTitle: books.find(book => book.id === loan.bookId)?.title || 'Inconnu',
+      }));
+    } catch (error) {
+      console.error('Error fetching user borrowings:', error);
+      return loans.filter(loan => loan.userId === userId && loan.status === 'pending').map(loan => ({
+        ...loan,
+        bookTitle: books.find(book => book.id === loan.bookId)?.title || 'Inconnu',
+      }));
+    }
+  }, [loans, books]);
+
+  const fetchUserBorrows = useCallback(async (userId: string): Promise<Loan[]> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Filter all loans for the user (active and past)
+      const userLoans = loans.filter(loan => loan.userId === userId);
+
+      // Fetch from API if needed (adjust endpoint)
+      const response = await axios.get(`http://localhost:8006/api/ressources/loan/history/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const apiLoans: Loan[] = response.data.map((loan: any) => ({
+        id: loan.id.toString(),
+        bookId: loan.bookId.toString(),
+        userId: loan.userId.toString(),
+        loanDate: loan.loanDate,
+        returnDate: loan.returnDate,
+        returned: loan.returned,
+        requestDate: loan.requestDate,
+        status: loan.status,
+      }));
+
+      const combinedLoans = [...userLoans, ...apiLoans.filter(l => !userLoans.some(ul => ul.id === l.id))];
+      return combinedLoans.map(loan => ({
+        ...loan,
+        bookTitle: books.find(book => book.id === loan.bookId)?.title || 'Inconnu',
+      }));
+    } catch (error) {
+      console.error('Error fetching user borrows:', error);
+      return loans.filter(loan => loan.userId === userId).map(loan => ({
+        ...loan,
+        bookTitle: books.find(book => book.id === loan.bookId)?.title || 'Inconnu',
+      }));
+    }
+  }, [loans, books]);
 
   const value: DataContextType = {
     teachers,
@@ -598,6 +792,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     deleteBook,
     borrowBook,
     returnBook,
+    fetchUserById,
+    fetchUserBorrowings,
+    fetchUserBorrows,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
+import { BookProvider } from './contexts/BookContext';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Pages principales
@@ -26,27 +27,29 @@ function App() {
     <Router>
       <AuthProvider>
         <DataProvider>
-          <Routes>
-            {/* Pages principales */}
-            <Route path="/" element={<HomePage />} />
-            
-            {/* Pages d'authentification */}
-            <Route path="/login/:type" element={<LoginPage />} />
-            <Route path="/register/:type" element={<RegisterPage />} />
-            <Route path="/email-reset/:type" element={<EmailResetPage />} /> {/* Added */}
-            <Route path="/otp-verify/:type" element={<OtpVerifyPage />} /> {/* Added */}
-            <Route path="/reset-password/:type/:token" element={<ResetPasswordPage />} />
-            
-            {/* Pages éducation */}
-            <Route path="/education/admin" element={<EducationDashboard />} />
-            <Route path="/education/teacher" element={<TeacherDashboard />} />
-            <Route path="/education/student" element={<StudentDashboard />} />
-            <Route path="/education/profile/:userId" element={<ProfilPage />} />
-            {/* Pages bibliothèque */}
-            <Route path="/library/admin" element={<LibraryDashboard />} />
-            <Route path="/library/home" element={<LibraryHomePage />} />
-          <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+          <BookProvider>
+            <Routes>
+              {/* Pages principales */}
+              <Route path="/" element={<HomePage />} />
+              
+              {/* Pages d'authentification */}
+              <Route path="/login/:type" element={<LoginPage />} />
+              <Route path="/register/:type" element={<RegisterPage />} />
+              <Route path="/email-reset/:type" element={<EmailResetPage />} /> {/* Added */}
+              <Route path="/otp-verify/:type" element={<OtpVerifyPage />} /> {/* Added */}
+              <Route path="/reset-password/:type/:token" element={<ResetPasswordPage />} />
+              
+              {/* Pages éducation */}
+              <Route path="/education/admin" element={<EducationDashboard />} />
+              <Route path="/education/teacher" element={<TeacherDashboard />} />
+              <Route path="/education/student" element={<StudentDashboard />} />
+              <Route path="/education/profile/:userId" element={<ProfilPage />} />
+              {/* Pages bibliothèque */}
+              <Route path="/library/admin" element={<LibraryDashboard />} />
+              <Route path="/library/home" element={<LibraryHomePage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </BookProvider>
         </DataProvider>
       </AuthProvider>
     </Router>

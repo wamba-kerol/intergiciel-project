@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Book, BookOpen } from 'lucide-react';
+import { Book, BookOpen, BookOpenCheck, BookCheck } from 'lucide-react';
 
 interface SidebarProps {
-  activeView: 'all' | 'my-books';
-  onViewChange: (view: 'all' | 'my-books') => void;
+  activeView: 'all' | 'my-books' | 'emprunter' | 'preter';
+  onViewChange: (view: 'all' | 'my-books' | 'emprunter' | 'preter') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
@@ -40,6 +40,30 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
           >
             <Book className="h-5 w-5 mr-3" />
             <span className="font-medium">Mes Livres</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('emprunter')}
+            className={`flex items-center w-full px-4 py-3 text-left rounded-md ${
+              activeView === 'emprunter'
+                ? 'bg-blue-50 text-blue-800'
+                : 'text-gray-700 hover:bg-gray-100'
+            } transition-colors duration-200`}
+          >
+            <BookOpenCheck className="h-5 w-5 mr-3" />
+            <span className="font-medium">Livres Empruntés</span>
+          </button>
+
+          <button
+            onClick={() => onViewChange('preter')}
+            className={`flex items-center w-full px-4 py-3 text-left rounded-md ${
+              activeView === 'preter'
+                ? 'bg-blue-50 text-blue-800'
+                : 'text-gray-700 hover:bg-gray-100'
+            } transition-colors duration-200`}
+          >
+            <BookCheck className="h-5 w-5 mr-3" />
+            <span className="font-medium">Livres Prêtés</span>
           </button>
         </nav>
       </div>
